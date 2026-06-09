@@ -1,0 +1,54 @@
+{
+  "name": "dawparse",
+  "version": "1.0.0",
+  "description": "FLP parsing and serialization library for browser and Node.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nikitacontreras/dawparse.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nikitacontreras/dawparse/issues"
+  },
+  "homepage": "https://github.com/nikitacontreras/dawparse#readme",
+  "keywords": [
+    "flp",
+    "fl-studio",
+    "parser",
+    "audio",
+    "midi",
+    "fruity-loops",
+    "zipped-loop-package",
+    "zip",
+    "daw"
+  ],
+  "author": "Nikita Contreras",
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  }
+}
