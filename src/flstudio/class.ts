@@ -7,6 +7,7 @@ import { parseFLPZip } from './zip.js';
 export interface FLPOptions {
   file?: string | Uint8Array | ArrayBuffer;
   zip?: string | Uint8Array | ArrayBuffer;
+  project?: FLPProject;
 }
 
 export class FLP {
@@ -15,7 +16,9 @@ export class FLP {
   public flpName?: string;
 
   constructor(options: FLPOptions) {
-    if (options.file !== undefined) {
+    if (options.project !== undefined) {
+      this.project = options.project;
+    } else if (options.file !== undefined) {
       const data = this.toUint8Array(options.file);
       this.project = parseFLP(data);
     } else if (options.zip !== undefined) {

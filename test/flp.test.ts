@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseFLP, serializeFLP, FLPProject, Note, AutomationPoint, TrackData, FLP } from '../src/index.js';
+import { FLP, FLPProject, Note, AutomationPoint, TrackData } from '../src/index.js';
 
 describe('FLP Parser & Serializer Roundtrip', () => {
   it('should parse and serialize a simple project with text, byte, and word events', () => {
@@ -11,7 +11,7 @@ describe('FLP Parser & Serializer Roundtrip', () => {
         channelCount: 1,
         ppq: 96,
         dataMagic: 'FLdt',
-        eventSize: 0 // Will be set by serializer
+        eventSize: 0
       },
       events: [
         {
@@ -41,32 +41,33 @@ describe('FLP Parser & Serializer Roundtrip', () => {
       ]
     };
 
-    const buffer = serializeFLP(project);
-    const parsed = parseFLP(buffer);
+    const originalFLP = new FLP({ project });
+    const buffer = originalFLP.serialize();
+    const flp = new FLP({ file: buffer });
 
-    expect(parsed.header.magic).toBe('FLhd');
-    expect(parsed.header.fmt).toBe(0);
-    expect(parsed.header.channelCount).toBe(1);
-    expect(parsed.header.ppq).toBe(96);
-    expect(parsed.header.dataMagic).toBe('FLdt');
+    expect(flp.project.header.magic).toBe('FLhd');
+    expect(flp.project.header.fmt).toBe(0);
+    expect(flp.project.header.channelCount).toBe(1);
+    expect(flp.project.header.ppq).toBe(96);
+    expect(flp.project.header.dataMagic).toBe('FLdt');
 
-    expect(parsed.events).toHaveLength(4);
+    expect(flp.project.events).toHaveLength(4);
 
     // Event 0: Project Title
-    expect(parsed.events[0].id).toBe(194);
-    expect(parsed.events[0].value).toBe('My Beautiful Song');
+    expect(flp.project.events[0].id).toBe(194);
+    expect(flp.project.events[0].value).toBe('My Beautiful Song');
 
     // Event 1: Channel Volume (Byte)
-    expect(parsed.events[1].id).toBe(2);
-    expect(parsed.events[1].value).toBe(100);
+    expect(flp.project.events[1].id).toBe(2);
+    expect(flp.project.events[1].value).toBe(100);
 
     // Event 2: Channel Volume (Word)
-    expect(parsed.events[2].id).toBe(72);
-    expect(parsed.events[2].value).toBe(12500);
+    expect(flp.project.events[2].id).toBe(72);
+    expect(flp.project.events[2].value).toBe(12500);
 
     // Event 3: Cut Group
-    expect(parsed.events[3].id).toBe(132);
-    expect(parsed.events[3].value).toEqual({ cutGroup: 1, cutBy: 2 });
+    expect(flp.project.events[3].id).toBe(132);
+    expect(flp.project.events[3].value).toEqual({ cutGroup: 1, cutBy: 2 });
   });
 
   it('should handle complex structured data events (Notes, Automation, TrackData)', () => {
@@ -168,20 +169,21 @@ describe('FLP Parser & Serializer Roundtrip', () => {
       ]
     };
 
-    const buffer = serializeFLP(project);
-    const parsed = parseFLP(buffer);
+    const originalFLP = new FLP({ project });
+    const buffer = originalFLP.serialize();
+    const flp = new FLP({ file: buffer });
 
-    expect(parsed.events).toHaveLength(3);
+    expect(flp.project.events).toHaveLength(3);
 
     // Event 0: Notes
-    expect(parsed.events[0].id).toBe(224);
-    const parsedNotes = parsed.events[0].value as Note[];
+    expect(flp.project.events[0].id).toBe(224);
+    const parsedNotes = flp.project.events[0].value as Note[];
     expect(parsedNotes).toHaveLength(1);
     expect(parsedNotes[0]).toEqual(note1);
 
     // Event 1: Track Data
-    expect(parsed.events[1].id).toBe(238);
-    const parsedTrack = parsed.events[1].value as TrackData;
+    expect(flp.project.events[1].id).toBe(238);
+    const parsedTrack = flp.project.events[1].value as TrackData;
     expect(parsedTrack.color.red).toBe(255);
     expect(parsedTrack.color.green).toBe(128);
     expect(parsedTrack.color.blue).toBe(0);
@@ -189,44 +191,11 @@ describe('FLP Parser & Serializer Roundtrip', () => {
     expect(parsedTrack.enabled).toBe(1);
 
     // Event 2: Automation
-    expect(parsed.events[2].id).toBe(234);
-    const parsedAutomation = parsed.events[2].value as any;
+    expect(flp.project.events[2].id).toBe(234);
+    const parsedAutomation = flp.project.events[2].value as any;
     expect(parsedAutomation.points).toHaveLength(1);
     expect(parsedAutomation.points[0].value).toBeCloseTo(0.8);
     expect(parsedAutomation.points[0].tensionSign).toBe(1);
     expect(parsedAutomation.lfoSpeed).toBe(100);
-  });
-
-  it('should parse and serialize using the FLP class wrapper', () => {
-    const project: FLPProject = {
-      header: {
-        magic: 'FLhd',
-        headerSize: 6,
-        fmt: 0,
-        channelCount: 1,
-        ppq: 96,
-        dataMagic: 'FLdt',
-        eventSize: 0
-      },
-      events: [
-        {
-          id: 194,
-          name: 'Project Title',
-          type: 'data',
-          value: 'Class Wrapper Test'
-        }
-      ]
-    };
-
-    const buffer = serializeFLP(project);
-
-    // Initialize with buffer
-    const flp = new FLP({ file: buffer });
-    expect(flp.project.header.magic).toBe('FLhd');
-    expect(flp.project.events[0].value).toBe('Class Wrapper Test');
-
-    // Test serialization
-    const serialized = flp.serialize();
-    expect(serialized.length).toBe(buffer.length);
   });
 });

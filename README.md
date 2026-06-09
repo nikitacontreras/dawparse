@@ -93,25 +93,6 @@ fs.writeFileSync('song_modified.flp', outputBuffer);
 
 ---
 
-## Low-level Functional API
-
-For advanced usage, you can directly import low-level functional parsers and serializers:
-
-```typescript
-import { parseFLP, serializeFLP, parseFLPZip } from 'dawparse';
-
-// Parse raw project bytes
-const project = parseFLP(flpBytes);
-
-// Serialize project object
-const flpBytes = serializeFLP(project);
-
-// Parse zipped loop package
-const { project: zipProject, files } = parseFLPZip(zipBytes);
-```
-
----
-
 ## Shared Binary Core (DRY Principle)
 
 `dawparse` exposes `BufferReader` and `BufferWriter` classes under `shared/` to simplify reading and writing binary files in an extensible way. You can leverage them to build new DAW parsers:
@@ -145,6 +126,12 @@ npm run test:watch
 # Run only ZIP package tests (including real-file test)
 npx vitest run test/zip.test.ts
 ```
+
+---
+
+## Implementing Other DAWs
+
+For details and structural templates on how to implement support for other DAW files (such as Ableton `.als` or Reaper `.RPP`), refer to the [DAW.md](file:///Users/nikitastrike/Development/flbin/DAW.md) documentation guide.
 
 ---
 
