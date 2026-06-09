@@ -1,5 +1,9 @@
-export { parseFLP } from './parser.js';
-export { serializeFLP } from './serializer.js';
-export * from './types.js';
-export * from './events.js';
-export * from './zip.js';
+export * as flstudio from './flstudio/index.js';
+
+// Backward compatibility exports
+export { parseFLP, serializeFLP, parseFLPZip } from './flstudio/index.js';
+export * from './flstudio/types.js';
+export * from './flstudio/events.js';
+export { FLPZipResult } from './flstudio/zip.js';
+export { BufferReader } from './shared/reader.js';
+export { BufferWriter } from './shared/writer.js';

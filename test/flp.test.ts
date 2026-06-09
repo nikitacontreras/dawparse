@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseFLP } from '../src/parser.js';
-import { serializeFLP } from '../src/serializer.js';
-import { FLPProject, Note, AutomationPoint, TrackData } from '../src/types.js';
+import { parseFLP, serializeFLP, FLPProject, Note, AutomationPoint, TrackData } from '../src/index.js';
 
 describe('FLP Parser & Serializer Roundtrip', () => {
   it('should parse and serialize a simple project with text, byte, and word events', () => {
