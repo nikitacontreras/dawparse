@@ -44,6 +44,7 @@
   "author": "Nikita Contreras",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^25.9.2",
     "tsup": "^8.0.2",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"

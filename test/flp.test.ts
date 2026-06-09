@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseFLP, serializeFLP, FLPProject, Note, AutomationPoint, TrackData } from '../src/index.js';
+import { parseFLP, serializeFLP, FLPProject, Note, AutomationPoint, TrackData, FLP } from '../src/index.js';
 
 describe('FLP Parser & Serializer Roundtrip', () => {
   it('should parse and serialize a simple project with text, byte, and word events', () => {
@@ -195,5 +195,38 @@ describe('FLP Parser & Serializer Roundtrip', () => {
     expect(parsedAutomation.points[0].value).toBeCloseTo(0.8);
     expect(parsedAutomation.points[0].tensionSign).toBe(1);
     expect(parsedAutomation.lfoSpeed).toBe(100);
+  });
+
+  it('should parse and serialize using the FLP class wrapper', () => {
+    const project: FLPProject = {
+      header: {
+        magic: 'FLhd',
+        headerSize: 6,
+        fmt: 0,
+        channelCount: 1,
+        ppq: 96,
+        dataMagic: 'FLdt',
+        eventSize: 0
+      },
+      events: [
+        {
+          id: 194,
+          name: 'Project Title',
+          type: 'data',
+          value: 'Class Wrapper Test'
+        }
+      ]
+    };
+
+    const buffer = serializeFLP(project);
+
+    // Initialize with buffer
+    const flp = new FLP({ file: buffer });
+    expect(flp.project.header.magic).toBe('FLhd');
+    expect(flp.project.events[0].value).toBe('Class Wrapper Test');
+
+    // Test serialization
+    const serialized = flp.serialize();
+    expect(serialized.length).toBe(buffer.length);
   });
 });
