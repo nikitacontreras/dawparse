@@ -699,10 +699,7 @@ const version = pkg.version;
         currentPPQ = flp.project.header.ppq;
         sampleBuffers = {}; // reset decoded buffers
         
-        // Initialize Audio Context proactively if not already initialized
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        }
+        // Audio Context will be initialized strictly on user interaction (Play button clicks)
 
         // Populate Details Info
         detailFlpName.textContent = flp.flpName || originalFileName;
@@ -848,7 +845,16 @@ const version = pkg.version;
               }
 
               const buffer = sampleBuffers[idx];
-              if (buffer && audioCtx) {
+              if (buffer) {
+                // Initialize audio context lazily on user gesture
+                if (!audioCtx) {
+                  audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                }
+                // Force resume if suspended by Safari policy
+                if (audioCtx.state === 'suspended') {
+                  audioCtx.resume();
+                }
+                
                 const source = audioCtx.createBufferSource();
                 source.buffer = buffer;
                 source.connect(audioCtx.destination);
@@ -872,8 +878,9 @@ const version = pkg.version;
             }
           });
           
-          // Decode Audio Samples asynchronously
-          if (isZip && flp.files && audioCtx) {
+          // Decode Audio Samples asynchronously using a temporary context
+          if (isZip && flp.files) {
+            const decodeCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
             channels.forEach((ch: any) => {
               // Try to find the exact file name or a file ending with the samplePath
               const sampleName = ch.samplePath;
@@ -904,7 +911,7 @@ const version = pkg.version;
                   
                   try {
                     // Use standard success/error callbacks for maximum browser compatibility (Safari)
-                    audioCtx!.decodeAudioData(
+                    decodeCtx.decodeAudioData(
                       arrayBuffer, 
                       (decodedData) => {
                         sampleBuffers[ch.index] = decodedData;
