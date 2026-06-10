@@ -1447,6 +1447,7 @@ const version = pkg.version;
           const noteTime = playStartTime + note.position * secondsPerTick;
           const noteDuration = note.duration * secondsPerTick;
 
+          const gainNode = audioCtx!.createGain();
           const maxVolume = (note.velocity / 127) * 0.12; // cap gain to avoid loudness clipping
           const sustainVolume = maxVolume * sustain;
 
