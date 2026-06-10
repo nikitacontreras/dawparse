@@ -785,38 +785,44 @@ const version = pkg.version;
             `;
 
             const samplePath = ch.samplePath || '';
-            let sampleContent = '';
-            if (samplePath === 'Generator (No Sample)' || !samplePath) {
-              sampleContent = `<span class="text-neutral-400 italic">Generator (No Sample)</span>`;
-            } else {
-              const filename = samplePath.split('\\').pop()?.split('/').pop() || samplePath;
-              let metadataHtml = '';
-              if (ch.metadata && ch.metadata.length > 0) {
-                metadataHtml = `
-                  <div class="mt-2 pt-2 border-t border-neutral-200">
-                    <strong class="font-semibold text-neutral-800 block mb-1 uppercase tracking-wide">Channel Metadata (Raw Events)</strong>
-                    <ul class="space-y-0.5 mt-1 text-[10px] sm:text-xs">
-                      ${ch.metadata.map((m: any) => {
-                        let displayValue = typeof m.value === 'object' ? JSON.stringify(m.value) : m.value;
-                        return `<li class="flex flex-col sm:flex-row sm:justify-between border-b border-neutral-100 last:border-0 pb-0.5"><span class="font-medium text-neutral-600 truncate mr-2" title="${m.name}">${m.name}</span> <span class="text-neutral-500 font-mono truncate max-w-[200px] text-right" title="${displayValue}">${displayValue}</span></li>`;
-                      }).join('')}
-                    </ul>
-                  </div>
-                `;
-              }
+            const isGenerator = samplePath === 'Generator (No Sample)' || !samplePath;
+            const filename = isGenerator ? 'Generator Plugin' : (samplePath.split('\\').pop()?.split('/').pop() || samplePath);
+            
+            let metadataHtml = '';
+            if (ch.metadata && ch.metadata.length > 0) {
+              metadataHtml = `
+                <div class="${isGenerator ? '' : 'mt-2 pt-2 border-t border-neutral-200'}">
+                  <strong class="font-semibold text-neutral-800 block mb-1 uppercase tracking-wide">Channel Metadata (Raw Events)</strong>
+                  <ul class="space-y-0.5 mt-1 text-[10px] sm:text-xs">
+                    ${ch.metadata.map((m: any) => {
+                      let displayValue = typeof m.value === 'object' ? JSON.stringify(m.value) : m.value;
+                      return `<li class="flex flex-col sm:flex-row sm:justify-between border-b border-neutral-100 last:border-0 pb-0.5"><span class="font-medium text-neutral-600 truncate mr-2" title="${m.name}">${m.name}</span> <span class="text-neutral-500 font-mono truncate max-w-[200px] text-right" title="${displayValue}">${displayValue}</span></li>`;
+                    }).join('')}
+                  </ul>
+                </div>
+              `;
+            }
 
+            let sampleContent = '';
+            if (isGenerator && (!ch.metadata || ch.metadata.length === 0)) {
+              sampleContent = `<span class="text-neutral-400 italic">Generator Plugin</span>`;
+            } else {
+              const fullSourcePathHtml = isGenerator ? '' : `
+                  <strong class="font-semibold text-neutral-800 block mb-1 uppercase tracking-wide">Full Source Path</strong>
+                  <div class="mb-2 break-all">${samplePath}</div>
+              `;
+              
               sampleContent = `
                 <details class="group">
                   <summary class="cursor-pointer list-none flex items-center gap-1.5 hover:text-neutral-900 transition-colors">
-                    <svg class="w-3.5 h-3.5 text-neutral-400 group-open:rotate-90 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="w-3.5 h-3.5 ${isGenerator ? 'text-indigo-400' : 'text-neutral-400'} group-open:rotate-90 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
-                    <span class="truncate font-semibold text-neutral-700 max-w-[150px] sm:max-w-[250px] md:max-w-[350px]" title="${filename}">${filename}</span>
+                    <span class="truncate font-semibold ${isGenerator ? 'text-indigo-600 italic' : 'text-neutral-700'} max-w-[150px] sm:max-w-[250px] md:max-w-[350px]" title="${filename}">${filename}</span>
                   </summary>
                   <div class="mt-2.5 mb-1 pl-3 pr-2 py-2.5 bg-white border border-neutral-200 rounded-md text-[10px] text-neutral-500 shadow-sm relative overflow-hidden">
-                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-neutral-200 rounded-l-md"></div>
-                    <strong class="font-semibold text-neutral-800 block mb-1 uppercase tracking-wide">Full Source Path</strong>
-                    <div class="mb-2 break-all">${samplePath}</div>
+                    <div class="absolute left-0 top-0 bottom-0 w-1 ${isGenerator ? 'bg-indigo-300' : 'bg-neutral-200'} rounded-l-md"></div>
+                    ${fullSourcePathHtml}
                     ${metadataHtml}
                   </div>
                 </details>
