@@ -795,10 +795,36 @@ const version = pkg.version;
                   <strong class="font-semibold text-neutral-800 block mb-1 uppercase tracking-wide">Channel Metadata (Raw Events)</strong>
                   <ul class="space-y-0.5 mt-1 text-[10px] sm:text-xs">
                     ${ch.metadata.map((m: any) => {
-                      let displayValue = typeof m.value === 'object' ? JSON.stringify(m.value) : m.value;
-                      const safeKey = String(m.name).replace(/"/g, '&quot;');
+                      let eventName = m.name;
+                      if (eventName === 'Unknown Event (213)') eventName = 'Plugin State (FLP_PluginParams)';
+                      
+                      let displayValue = '';
+                      let isObject = false;
+                      if (typeof m.value === 'object' && m.value !== null) {
+                        // Check if it's a huge binary buffer returned as an object/array
+                        if (m.value instanceof Uint8Array || m.value.buffer || Object.keys(m.value).length > 30) {
+                          const len = m.value instanceof Uint8Array ? m.value.length : Object.keys(m.value).length;
+                          displayValue = `[Binary Data Blob: ${len} bytes]`;
+                          isObject = false; // keep inline
+                        } else {
+                          isObject = true;
+                          displayValue = JSON.stringify(m.value, null, 2);
+                        }
+                      } else {
+                        displayValue = String(m.value);
+                      }
+
+                      const safeKey = String(eventName).replace(/"/g, '&quot;');
                       const safeValue = String(displayValue).replace(/"/g, '&quot;');
-                      return `<li class="metadata-row group/row cursor-pointer hover:bg-neutral-50 flex flex-col sm:flex-row sm:justify-between border-b border-neutral-100 last:border-0 pb-0.5 px-1 rounded transition-colors" data-key="${safeKey}" data-value="${safeValue}" title="Click to copy as JSON"><span class="font-medium text-neutral-600 truncate mr-2 group-hover/row:text-neutral-900 transition-colors">${m.name}</span> <span class="text-neutral-500 font-mono truncate max-w-[200px] text-right group-hover/row:text-neutral-800 transition-colors">${displayValue}</span></li>`;
+                      
+                      if (isObject) {
+                        return `<li class="metadata-row group/row cursor-pointer hover:bg-neutral-50 flex flex-col border-b border-neutral-100 last:border-0 pb-1.5 pt-1 px-1 rounded transition-colors" data-key="${safeKey}" data-value="${safeValue}" title="Click to copy as JSON">
+                          <span class="font-medium text-neutral-600 group-hover/row:text-neutral-900 transition-colors">${eventName}</span> 
+                          <pre class="text-[9px] text-neutral-500 font-mono bg-neutral-100 border border-neutral-200 p-1.5 rounded mt-1 overflow-x-auto whitespace-pre group-hover/row:text-neutral-800 transition-colors">${displayValue}</pre>
+                        </li>`;
+                      } else {
+                        return `<li class="metadata-row group/row cursor-pointer hover:bg-neutral-50 flex flex-col sm:flex-row sm:justify-between border-b border-neutral-100 last:border-0 pb-0.5 px-1 rounded transition-colors" data-key="${safeKey}" data-value="${safeValue}" title="Click to copy as JSON"><span class="font-medium text-neutral-600 truncate mr-2 group-hover/row:text-neutral-900 transition-colors" title="${eventName}">${eventName}</span> <span class="text-neutral-500 font-mono truncate max-w-[200px] text-right group-hover/row:text-neutral-800 transition-colors" title="${displayValue}">${displayValue}</span></li>`;
+                      }
                     }).join('')}
                   </ul>
                 </div>
