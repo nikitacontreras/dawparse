@@ -896,14 +896,17 @@ const version = pkg.version;
                 }
                 
                 if (matchedFileBuffer) {
-                  // Copy Uint8Array into a new ArrayBuffer because decodeAudioData transfers the buffer
-                  const arrayBuffer = matchedFileBuffer.buffer.slice(
-                    matchedFileBuffer.byteOffset,
-                    matchedFileBuffer.byteOffset + matchedFileBuffer.byteLength
-                  );
+                  // Create a clean, exact-size copy of the buffer. Zip extractors often return views 
+                  // over a larger shared memory pool which breaks decodeAudioData.
+                  const cleanUint8Array = new Uint8Array(matchedFileBuffer);
+                  const arrayBuffer = cleanUint8Array.buffer;
+                  
                   audioCtx!.decodeAudioData(arrayBuffer, (decodedData) => {
                     sampleBuffers[ch.index] = decodedData;
-                  }).catch(e => console.warn('Failed to decode audio for channel', ch.index, e));
+                  }).catch(e => {
+                    console.warn('Failed to decode audio for channel', ch.index, e);
+                    console.warn(`Attempted to decode buffer of size: ${arrayBuffer.byteLength} bytes`);
+                  });
                 }
               }
             });
