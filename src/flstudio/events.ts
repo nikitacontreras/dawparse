@@ -136,6 +136,9 @@ export function getEventType(id: number): 'byte' | 'word' | 'dword' | 'data' | '
   if (id === 132) {
     return 'cutGroup';
   }
+  if (id === 172) {
+    return 'byte';
+  }
   if (id < S_WORD) {
     return 'byte';
   }

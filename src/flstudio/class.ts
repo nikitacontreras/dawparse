@@ -57,6 +57,56 @@ export class FLP {
   }
 
   /**
+   * Gets the project tempo/BPM cleanly.
+   */
+  get bpm(): number {
+    let defaultBpm = 130;
+    const tempoEvent = this.project.events.find((e) => e.id === 156);
+    const coarseTempoEvent = this.project.events.find((e) => e.id === 66);
+    const fineTempoEvent = this.project.events.find((e) => e.id === 93);
+
+    if (tempoEvent && typeof tempoEvent.value === 'number') {
+      defaultBpm = tempoEvent.value > 1000 ? tempoEvent.value / 1000 : tempoEvent.value;
+    } else if (coarseTempoEvent && typeof coarseTempoEvent.value === 'number') {
+      const fine = fineTempoEvent && typeof fineTempoEvent.value === 'number' ? fineTempoEvent.value : 0;
+      const finePart = fine > 100 ? fine / 1000 : fine / 100;
+      defaultBpm = coarseTempoEvent.value + finePart;
+    }
+
+    return Math.round(defaultBpm * 10) / 10;
+  }
+
+  /**
+   * Sets the project tempo/BPM cleanly.
+   */
+  set bpm(value: number) {
+    const tempoVal = Math.round(value * 1000);
+    const tempoEvent = this.project.events.find((e) => e.id === 156);
+    if (tempoEvent) {
+      tempoEvent.value = tempoVal;
+      return;
+    }
+
+    const coarseTempoEvent = this.project.events.find((e) => e.id === 66);
+    if (coarseTempoEvent) {
+      coarseTempoEvent.value = Math.floor(value);
+      const fineTempoEvent = this.project.events.find((e) => e.id === 93);
+      if (fineTempoEvent) {
+        fineTempoEvent.value = Math.round((value - Math.floor(value)) * 1000);
+      }
+      return;
+    }
+
+    // Default fallback: push a new Project Tempo dword event
+    this.project.events.push({
+      id: 156,
+      name: 'Project Tempo',
+      type: 'dword',
+      value: tempoVal,
+    });
+  }
+
+  /**
    * Serializes the current project state back to a binary Uint8Array.
    */
   public serialize(): Uint8Array {

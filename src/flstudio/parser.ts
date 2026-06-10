@@ -126,7 +126,23 @@ export function parseFLP(data: Uint8Array): FLPProject {
 
 function parseStructuredData(id: number, payload: Uint8Array): FLPEvent['value'] {
   if (isStringEvent(id)) {
-    const decoder = new TextDecoder('utf-8');
+    if (payload.length === 0) return '';
+
+    // Check if the payload is UTF-16 LE
+    let isUtf16 = false;
+    if (payload.length >= 2) {
+      let zeroCountOdd = 0;
+      let totalOdd = 0;
+      for (let i = 1; i < payload.length; i += 2) {
+        totalOdd++;
+        if (payload[i] === 0) zeroCountOdd++;
+      }
+      if (zeroCountOdd / totalOdd > 0.8) {
+        isUtf16 = true;
+      }
+    }
+
+    const decoder = new TextDecoder(isUtf16 ? 'utf-16le' : 'utf-8');
     let str = decoder.decode(payload);
     if (str.endsWith('\0')) {
       str = str.slice(0, -1);

@@ -198,4 +198,56 @@ describe('FLP Parser & Serializer Roundtrip', () => {
     expect(parsedAutomation.points[0].tensionSign).toBe(1);
     expect(parsedAutomation.lfoSpeed).toBe(100);
   });
+
+  it('should get and set project BPM cleanly using class properties', () => {
+    const project: FLPProject = {
+      header: {
+        magic: 'FLhd',
+        headerSize: 6,
+        fmt: 0,
+        channelCount: 1,
+        ppq: 96,
+        dataMagic: 'FLdt',
+        eventSize: 0,
+      },
+      events: [
+        {
+          id: 156, // Project Tempo
+          name: 'Project Tempo',
+          type: 'dword',
+          value: 120000, // 120 BPM
+        },
+      ],
+    };
+
+    const flp = new FLP({ project });
+    expect(flp.bpm).toBe(120);
+
+    flp.bpm = 92.5;
+    expect(flp.bpm).toBe(92.5);
+
+    const tempoEvent = flp.project.events.find(e => e.id === 156);
+    expect(tempoEvent?.value).toBe(92500);
+
+    // Test default fallback push
+    const projectEmpty: FLPProject = {
+      header: {
+        magic: 'FLhd',
+        headerSize: 6,
+        fmt: 0,
+        channelCount: 1,
+        ppq: 96,
+        dataMagic: 'FLdt',
+        eventSize: 0,
+      },
+      events: [],
+    };
+    const flpEmpty = new FLP({ project: projectEmpty });
+    expect(flpEmpty.bpm).toBe(130); // Default fallback
+
+    flpEmpty.bpm = 142;
+    expect(flpEmpty.bpm).toBe(142);
+    expect(flpEmpty.project.events[0].id).toBe(156);
+    expect(flpEmpty.project.events[0].value).toBe(142000);
+  });
 });
