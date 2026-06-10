@@ -557,9 +557,12 @@ const version = pkg.version;
       let selectedChannelRackIndex = -1;
       let currentMaxEnd = 0;
 
+      let sampleBuffers: Record<number, AudioBuffer> = {};
+
       // Audio Preview State
       let audioCtx: AudioContext | null = null;
       let activeOscillators: OscillatorNode[] = [];
+      let activeSampleSources: AudioBufferSourceNode[] = [];
       let isPlaying = false;
       let playStartTime = 0;
       let playAnimationId: number | null = null;
@@ -676,6 +679,12 @@ const version = pkg.version;
         metaEventsCount.textContent = String(flp.project.events.length);
 
         currentPPQ = flp.project.header.ppq;
+        sampleBuffers = {}; // reset decoded buffers
+        
+        // Initialize Audio Context proactively if not already initialized
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
 
         // Populate Details Info
         detailFlpName.textContent = flp.flpName || originalFileName;
@@ -774,6 +783,43 @@ const version = pkg.version;
             `;
             channelsList.appendChild(row);
           });
+          
+          // Decode Audio Samples asynchronously
+          if (isZip && flp.files && audioCtx) {
+            channels.forEach((ch: any) => {
+              // Try to find the exact file name or a file ending with the samplePath
+              const sampleName = ch.samplePath;
+              if (sampleName && sampleName !== 'Generator (No Sample)') {
+                let matchedFileBuffer = null;
+                // Direct match
+                if (flp.files[sampleName]) {
+                  matchedFileBuffer = flp.files[sampleName];
+                } else {
+                  // Fallback: search for basename
+                  const basename = sampleName.split('\\').pop()?.split('/').pop();
+                  if (basename) {
+                    for (const [fname, bytes] of Object.entries(flp.files)) {
+                      if (fname === basename || fname.endsWith(`/${basename}`) || fname.endsWith(`\\${basename}`)) {
+                        matchedFileBuffer = bytes;
+                        break;
+                      }
+                    }
+                  }
+                }
+                
+                if (matchedFileBuffer) {
+                  // Copy Uint8Array into a new ArrayBuffer because decodeAudioData transfers the buffer
+                  const arrayBuffer = matchedFileBuffer.buffer.slice(
+                    matchedFileBuffer.byteOffset,
+                    matchedFileBuffer.byteOffset + matchedFileBuffer.byteLength
+                  );
+                  audioCtx!.decodeAudioData(arrayBuffer, (decodedData) => {
+                    sampleBuffers[ch.index] = decodedData;
+                  }).catch(e => console.warn('Failed to decode audio for channel', ch.index, e));
+                }
+              }
+            });
+          }
         }
 
         // Extract and Render Tracks
@@ -1335,6 +1381,14 @@ const version = pkg.version;
         });
         activeOscillators = [];
 
+        // Stop all sample sources
+        activeSampleSources.forEach((src) => {
+          try {
+            src.stop();
+          } catch (e) {}
+        });
+        activeSampleSources = [];
+
         // Reset buttons
         btnPlayPreview.classList.remove('hidden');
         btnStopPreview.classList.add('hidden');
@@ -1393,15 +1447,6 @@ const version = pkg.version;
           const noteTime = playStartTime + note.position * secondsPerTick;
           const noteDuration = note.duration * secondsPerTick;
 
-          // Pitch to frequency formula
-          const freq = 440 * Math.pow(2, (note.key - 69) / 12);
-
-          const osc = audioCtx.createOscillator();
-          const gainNode = audioCtx.createGain();
-
-          osc.type = waveform;
-          osc.frequency.setValueAtTime(freq, noteTime);
-
           const maxVolume = (note.velocity / 127) * 0.12; // cap gain to avoid loudness clipping
           const sustainVolume = maxVolume * sustain;
 
@@ -1416,13 +1461,38 @@ const version = pkg.version;
           // Release phase
           gainNode.gain.exponentialRampToValueAtTime(0.0001, noteTime + noteDuration + release);
 
-          osc.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
+          gainNode.connect(audioCtx!.destination);
 
-          osc.start(noteTime);
-          osc.stop(noteTime + noteDuration + release);
-
-          activeOscillators.push(osc);
+          const sampleBuffer = sampleBuffers[note.rack];
+          
+          if (sampleBuffer) {
+            // Play Real Audio Sample
+            const source = audioCtx!.createBufferSource();
+            source.buffer = sampleBuffer;
+            
+            // Pitch shifting: usually MIDI 60 (C5) is the root note for FL Studio samples
+            // But we might want to check the channel root note if available. Defaulting to 60.
+            source.playbackRate.value = Math.pow(2, (note.key - 60) / 12);
+            
+            source.connect(gainNode);
+            source.start(noteTime);
+            source.stop(noteTime + noteDuration + release);
+            
+            activeSampleSources.push(source);
+          } else {
+            // Fallback to synthetic Oscillator
+            const freq = 440 * Math.pow(2, (note.key - 69) / 12);
+            const osc = audioCtx!.createOscillator();
+            
+            osc.type = waveform;
+            osc.frequency.setValueAtTime(freq, noteTime);
+            osc.connect(gainNode);
+            
+            osc.start(noteTime);
+            osc.stop(noteTime + noteDuration + release);
+            
+            activeOscillators.push(osc);
+          }
         });
 
         // Start playhead animation loop
