@@ -421,6 +421,7 @@ const version = pkg.version;
                   <tr class="border-b border-neutral-200">
                     <th class="py-2 font-medium text-neutral-500">Note Index</th>
                     <th class="py-2 font-medium text-neutral-500">Rack Item</th>
+                    <th class="py-2 font-medium text-neutral-500">Sample File</th>
                     <th class="py-2 font-medium text-neutral-500">Position (ticks)</th>
                     <th class="py-2 font-medium text-neutral-500">Duration</th>
                     <th class="py-2 font-medium text-neutral-500">Key Note</th>
@@ -1425,6 +1426,14 @@ const version = pkg.version;
           const channel = currentChannels.find((c) => c.index === note.rack);
           const channelName = channel ? channel.name : `Rack Item #${note.rack}`;
           
+          let sampleFilenameHtml = '<span class="text-neutral-400 italic text-[10px]">Generator</span>';
+          let pureFilename = '';
+          if (channel && channel.samplePath && channel.samplePath !== 'Generator (No Sample)') {
+            const pathParts = channel.samplePath.split(/[\\\/]/);
+            pureFilename = pathParts[pathParts.length - 1];
+            sampleFilenameHtml = pureFilename;
+          }
+          
           const colorScheme = RACK_COLORS[note.rack % RACK_COLORS.length];
           const badgeColor = colorScheme.stroke;
           
@@ -1433,9 +1442,10 @@ const version = pkg.version;
             <td class="py-2 text-neutral-800 font-semibold text-xs sm:text-sm">
               <span class="inline-flex items-center space-x-1.5">
                 <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${badgeColor}"></span>
-                <span>${channelName}</span>
+                <span class="truncate max-w-[100px] sm:max-w-[160px]" title="${channelName}">${channelName}</span>
               </span>
             </td>
+            <td class="py-2 text-neutral-600 font-mono text-[10px] sm:text-xs truncate max-w-[120px] sm:max-w-[180px]" title="${pureFilename}">${sampleFilenameHtml}</td>
             <td class="py-2 text-neutral-600 font-mono text-xs">${note.position}</td>
             <td class="py-2 text-neutral-600 font-mono text-xs">${note.duration}</td>
             <td class="py-2 text-neutral-800 font-bold text-xs sm:text-sm">${getNoteName(note.key)}</td>
