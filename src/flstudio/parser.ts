@@ -19,8 +19,26 @@ import {
   ChannelTracking,
   ChannelLevelAdjusts,
   ChannelAutomation,
-  CutGroupEvent
+  CutGroupEvent,
 } from './types.js';
+import {
+  EXPECTED_LENGTHS,
+  readStruct,
+  ChannelDelayFields,
+  PluginWrapperFields,
+  ChannelEnvelopeLFOFields,
+  ChannelLevelsFields,
+  ChannelPolyphonyFields,
+  NoteFields,
+  MixerParamFields,
+  RemoteControllerFields,
+  ChannelTrackingFields,
+  ChannelLevelAdjustsFields,
+  AutomationPointFields,
+  AutomationHeaderFields,
+  AutomationFooterFields,
+  TrackDataFields,
+} from './schemas.js';
 
 export function parseFLP(data: Uint8Array): FLPProject {
   const reader = new BufferReader(data);
@@ -116,37 +134,27 @@ function parseStructuredData(id: number, payload: Uint8Array): FLPEvent['value']
     return str;
   }
 
+  // Enforce validation for expected payload lengths
+  const expectedLen = EXPECTED_LENGTHS[id];
+  if (expectedLen !== undefined && payload.length < expectedLen) {
+    throw new Error(
+      `FLP structured event ID ${id} too short: expected at least ${expectedLen} bytes, got ${payload.length} bytes`,
+    );
+  }
+
   const reader = new BufferReader(payload);
 
   switch (id) {
-    case 209: { // Channel Delay
-      if (payload.length < 20) return payload;
-      const feedback = reader.readInt32();
-      const pan = reader.readInt32();
-      const pitchShift = reader.readInt32();
-      const echoes = reader.readInt32();
-      const time = reader.readInt32();
-      return { feedback, pan, pitchShift, echoes, time } as ChannelDelay;
+    case 209: {
+      // Channel Delay
+      return readStruct<ChannelDelay>(reader, ChannelDelayFields);
     }
-    case 212: { // Plugin Wrapper
-      if (payload.length < 52) return payload;
-      const mixerInsert = reader.readInt32();
-      const mixerSlot = reader.readInt32();
-      const u1 = reader.readInt32();
-      const u2 = reader.readInt32();
-      const flags = reader.readUint32();
-      const page = reader.readUint32();
-      const u3 = reader.readInt32();
-      const u4 = reader.readInt32();
-      const u5 = reader.readInt32();
-      const x = reader.readInt32();
-      const y = reader.readInt32();
-      const width = reader.readUint32();
-      const height = reader.readUint32();
-      return { mixerInsert, mixerSlot, u1, u2, flags, page, u3, u4, u5, x, y, width, height } as PluginWrapper;
+    case 212: {
+      // Plugin Wrapper
+      return readStruct<PluginWrapper>(reader, PluginWrapperFields);
     }
-    case 215: { // Channel Parameters
-      if (payload.length < 168) return payload;
+    case 215: {
+      // Channel Parameters
       const simSynthTempo = reader.readInt32();
       const spectrumView = reader.readUint8();
       const multiChannelWaveformView = reader.readUint8();
@@ -187,10 +195,12 @@ function parseStructuredData(id: number, payload: Uint8Array): FLPEvent['value']
       const stretchPitch = reader.readInt32();
       const stretchMultiplier = reader.readInt32();
       const stretchMode = reader.readInt32();
+
       const u5: number[] = [];
       for (let i = 0; i < 4; i++) {
         u5.push(reader.readInt32());
       }
+
       const fxStart = reader.readFloat64();
       const fxEnd = reader.readFloat64();
       const u6 = reader.readInt32();
@@ -200,213 +210,222 @@ function parseStructuredData(id: number, payload: Uint8Array): FLPEvent['value']
       const fixTrim = reader.readUint8();
       const u8 = reader.readInt16();
       const formantShift = reader.readFloat64();
+
       return {
-        simSynthTempo, spectrumView, multiChannelWaveformView, u1, useRiff, removeDc, delayFlags, keyboardPitch,
-        simSynthKeyboardPitch, drumSynthKeyboardPitch, tone, overtone, noise, noiseBand, timeStretch,
-        arpDirection, arpRange, arpChord, arpTime, arpGate, arpSlide, u2, fullPorta, addRoot, timeGate, u3,
-        keyRegionMin, keyRegionMax, layerCrossfade, normalize, inverted, u4, declickMode, crossfade, trim,
-        arpRepeat, stretchTime, stretchPitch, stretchMultiplier, stretchMode, u5, fxStart, fxEnd, u6,
-        playbackStart, u7, reverseRegions, fixTrim, u8, formantShift
+        simSynthTempo,
+        spectrumView,
+        multiChannelWaveformView,
+        u1,
+        useRiff,
+        removeDc,
+        delayFlags,
+        keyboardPitch,
+        simSynthKeyboardPitch,
+        drumSynthKeyboardPitch,
+        tone,
+        overtone,
+        noise,
+        noiseBand,
+        timeStretch,
+        arpDirection,
+        arpRange,
+        arpChord,
+        arpTime,
+        arpGate,
+        arpSlide,
+        u2,
+        fullPorta,
+        addRoot,
+        timeGate,
+        u3,
+        keyRegionMin,
+        keyRegionMax,
+        layerCrossfade,
+        normalize,
+        inverted,
+        u4,
+        declickMode,
+        crossfade,
+        trim,
+        arpRepeat,
+        stretchTime,
+        stretchPitch,
+        stretchMultiplier,
+        stretchMode,
+        u5,
+        fxStart,
+        fxEnd,
+        u6,
+        playbackStart,
+        u7,
+        reverseRegions,
+        fixTrim,
+        u8,
+        formantShift,
       } as ChannelParameters;
     }
-    case 218: { // Channel Envelope LFO
-      if (payload.length < 68) return payload;
-      const flags = reader.readInt32();
-      const envelopeEnabled = reader.readInt32();
-      const envelopePredelay = reader.readInt32();
-      const envelopeAttack = reader.readInt32();
-      const envelopeHold = reader.readInt32();
-      const envelopeDecay = reader.readInt32();
-      const envelopeSustain = reader.readInt32();
-      const envelopeRelease = reader.readInt32();
-      const envelopeAmount = reader.readInt32();
-      const lfoPredelay = reader.readInt32();
-      const lfoAttack = reader.readInt32();
-      const lfoAmount = reader.readInt32();
-      const lfoSpeed = reader.readInt32();
-      const lfoShape = reader.readInt32();
-      const envelopeAttackTension = reader.readInt32();
-      const envelopeDecayTension = reader.readInt32();
-      const envelopeReleaseTension = reader.readInt32();
-      return {
-        flags, envelopeEnabled, envelopePredelay, envelopeAttack, envelopeHold, envelopeDecay,
-        envelopeSustain, envelopeRelease, envelopeAmount, lfoPredelay, lfoAttack, lfoAmount,
-        lfoSpeed, lfoShape, envelopeAttackTension, envelopeDecayTension, envelopeReleaseTension
-      } as ChannelEnvelopeLFO;
+    case 218: {
+      // Channel Envelope LFO
+      return readStruct<ChannelEnvelopeLFO>(reader, ChannelEnvelopeLFOFields);
     }
-    case 219: { // Channel Levels
-      if (payload.length < 24) return payload;
-      const pan = reader.readInt32();
-      const volume = reader.readInt32();
-      const pitch = reader.readInt32();
-      const modX = reader.readInt32();
-      const modY = reader.readInt32();
-      const filterType = reader.readInt32();
-      return { pan, volume, pitch, modX, modY, filterType } as ChannelLevels;
+    case 219: {
+      // Channel Levels
+      return readStruct<ChannelLevels>(reader, ChannelLevelsFields);
     }
-    case 221: { // Channel Polyphony
-      if (payload.length < 9) return payload;
-      const max = reader.readInt32();
-      const slide = reader.readInt32();
-      const type = reader.readUint8() as 0 | 1 | 2;
-      return { max, slide, type } as ChannelPolyphony;
+    case 221: {
+      // Channel Polyphony
+      return readStruct<ChannelPolyphony>(reader, ChannelPolyphonyFields);
     }
-    case 224: { // Pattern Notes
+    case 224: {
+      // Pattern Notes
+      if (payload.length % 24 !== 0) {
+        throw new Error(
+          `FLP structured event ID 224 size mismatch: expected multiple of 24 bytes, got ${payload.length} bytes`,
+        );
+      }
       const notes: Note[] = [];
       const noteCount = Math.floor(payload.length / 24);
       for (let i = 0; i < noteCount; i++) {
-        notes.push({
-          position: reader.readUint32(),
-          flags: reader.readUint16(),
-          rack: reader.readUint16(),
-          duration: reader.readUint32(),
-          key: reader.readUint16(),
-          group: reader.readInt16(),
-          pitch: reader.readInt16(),
-          release: reader.readUint8(),
-          midiChannel: reader.readUint8(),
-          pan: reader.readUint8(),
-          velocity: reader.readUint8(),
-          modX: reader.readUint8(),
-          modY: reader.readUint8(),
-        });
+        notes.push(readStruct<Note>(reader, NoteFields));
       }
       return notes;
     }
-    case 225: { // Mixer Parameters
+    case 225: {
+      // Mixer Parameters
+      if (payload.length % 12 !== 0) {
+        throw new Error(
+          `FLP structured event ID 225 size mismatch: expected multiple of 12 bytes, got ${payload.length} bytes`,
+        );
+      }
       const params: MixerParam[] = [];
       const paramCount = Math.floor(payload.length / 12);
       for (let i = 0; i < paramCount; i++) {
-        const u1 = reader.readInt32();
-        const paramId = reader.readUint8();
-        const u2 = reader.readUint8();
-        const bitfield = reader.readUint16();
-        const slot = bitfield & 0x3f;
-        const insert = (bitfield >> 6) & 0x7f;
-        const type = (bitfield >> 13) & 0x07;
-        const data = reader.readUint32();
-        params.push({ u1, paramId, u2, slot, insert, type, data });
+        const flat = readStruct<Record<string, number>>(reader, MixerParamFields);
+        params.push({
+          u1: flat.u1,
+          paramId: flat.paramId,
+          u2: flat.u2,
+          slot: flat.bitfield & 0x3f,
+          insert: (flat.bitfield >> 6) & 0x7f,
+          type: (flat.bitfield >> 13) & 0x07,
+          data: flat.data,
+        });
       }
       return params;
     }
-    case 227: { // Remote Controller
-      if (payload.length < 18) return payload;
-      const internalParam = reader.readUint16();
-      const automationChannel = reader.readInt32();
-      const u1 = reader.readUint16();
-      const targetParam = reader.readUint16();
-      const generatorChannel = reader.readUint16();
-      const params = reader.readUint32();
-      const smoothingFactor = reader.readUint32();
-      return { internalParam, automationChannel, u1, targetParam, generatorChannel, params, smoothingFactor } as RemoteController;
+    case 227: {
+      // Remote Controller
+      return readStruct<RemoteController>(reader, RemoteControllerFields);
     }
-    case 228: { // Channel Tracking
-      if (payload.length < 16) return payload;
-      const mid = reader.readInt32();
-      const pan = reader.readInt32();
-      const modX = reader.readInt32();
-      const modY = reader.readInt32();
-      return { mid, pan, modX, modY } as ChannelTracking;
+    case 228: {
+      // Channel Tracking
+      return readStruct<ChannelTracking>(reader, ChannelTrackingFields);
     }
-    case 229: { // Channel Level Adjusts
-      if (payload.length < 20) return payload;
-      const pan = reader.readInt32();
-      const volume = reader.readInt32();
-      const pitch = reader.readInt32();
-      const modX = reader.readInt32();
-      const modY = reader.readInt32();
-      return { pan, volume, pitch, modX, modY } as ChannelLevelAdjusts;
+    case 229: {
+      // Channel Level Adjusts
+      return readStruct<ChannelLevelAdjusts>(reader, ChannelLevelAdjustsFields);
     }
-    case 234: { // Channel Automation
-      if (payload.length < 21) return payload;
-      const version = reader.readInt32();
-      const lfoAmount = reader.readInt32();
-      const dontMultiplyEnvelopeLevel = reader.readUint8();
-      const u1 = reader.readInt32();
-      const u2 = reader.readInt32();
-      const numPoints = reader.readInt32();
+    case 234: {
+      // Channel Automation
+      if (payload.length < 21) {
+        throw new Error(
+          `FLP structured event ID 234 too short: expected at least 21 bytes, got ${payload.length} bytes`,
+        );
+      }
+      const header = readStruct<Record<string, number>>(reader, AutomationHeaderFields);
 
       const points: AutomationPoint[] = [];
-      for (let i = 0; i < numPoints; i++) {
-        if (reader.remaining < 24) break;
-        points.push({
-          delta: reader.readFloat64(),
-          value: reader.readFloat64(),
-          tension: reader.readFloat32(),
-          tensionType: reader.readUint16(),
-          isSelected: reader.readUint8(),
-          tensionSign: reader.readInt8(),
-        });
+      for (let i = 0; i < header.numPoints; i++) {
+        if (reader.remaining < 24) {
+          throw new Error(
+            `FLP structured event ID 234 truncated: ran out of bytes parsing automation point ${i}`,
+          );
+        }
+        points.push(readStruct<AutomationPoint>(reader, AutomationPointFields));
       }
 
-      if (reader.remaining < 44) return payload;
+      if (reader.remaining < 44) {
+        throw new Error(
+          `FLP structured event ID 234 truncated: missing unknown1 data segment (remaining: ${reader.remaining})`,
+        );
+      }
       const unknown1 = reader.readBytes(44);
 
-      if (reader.remaining < 4) return payload;
+      if (reader.remaining < 4) {
+        throw new Error(
+          `FLP structured event ID 234 truncated: missing numLFOPoints header (remaining: ${reader.remaining})`,
+        );
+      }
       const numLFOPoints = reader.readInt32();
 
       const lfoPoints: AutomationPoint[] = [];
       for (let i = 0; i < numLFOPoints; i++) {
-        if (reader.remaining < 24) break;
-        lfoPoints.push({
-          delta: reader.readFloat64(),
-          value: reader.readFloat64(),
-          tension: reader.readFloat32(),
-          tensionType: reader.readUint16(),
-          isSelected: reader.readUint8(),
-          tensionSign: reader.readInt8(),
-        });
+        if (reader.remaining < 24) {
+          throw new Error(
+            `FLP structured event ID 234 truncated: ran out of bytes parsing LFO automation point ${i}`,
+          );
+        }
+        lfoPoints.push(readStruct<AutomationPoint>(reader, AutomationPointFields));
       }
 
-      if (reader.remaining < 20) return payload;
+      if (reader.remaining < 20) {
+        throw new Error(
+          `FLP structured event ID 234 truncated: missing unknown2 data segment (remaining: ${reader.remaining})`,
+        );
+      }
       const unknown2 = reader.readBytes(20);
 
-      if (reader.remaining < 20) return payload;
-      const lfoSpeed = reader.readInt32();
-      const lfoTension = reader.readInt32();
-      const lfoSkew = reader.readInt32();
-      const lfoPulseWidth = reader.readInt32();
-      const lfoOffset = reader.readFloat32();
+      if (reader.remaining < 20) {
+        throw new Error(
+          `FLP structured event ID 234 truncated: missing automation footer (remaining: ${reader.remaining})`,
+        );
+      }
+      const footer = readStruct<Record<string, number>>(reader, AutomationFooterFields);
 
       return {
-        version, lfoAmount, dontMultiplyEnvelopeLevel, u1, u2, numPoints, points,
-        unknown1, numLFOPoints, lfoPoints, unknown2, lfoSpeed, lfoTension,
-        lfoSkew, lfoPulseWidth, lfoOffset
+        version: header.version,
+        lfoAmount: header.lfoAmount,
+        dontMultiplyEnvelopeLevel: header.dontMultiplyEnvelopeLevel,
+        u1: header.u1,
+        u2: header.u2,
+        numPoints: header.numPoints,
+        points,
+        unknown1,
+        numLFOPoints,
+        lfoPoints,
+        unknown2,
+        lfoSpeed: footer.lfoSpeed,
+        lfoTension: footer.lfoTension,
+        lfoSkew: footer.lfoSkew,
+        lfoPulseWidth: footer.lfoPulseWidth,
+        lfoOffset: footer.lfoOffset,
       } as ChannelAutomation;
     }
-    case 238: { // Track Data
-      if (payload.length < 66) return payload;
-      const idx = reader.readInt32();
-      const color: Color = {
-        red: reader.readUint8(),
-        green: reader.readUint8(),
-        blue: reader.readUint8(),
-      };
-      reader.readUint8(); // read unused byte at offset 7
-      const icon = reader.readInt32();
-      const enabled = reader.readUint8();
-      const height = reader.readFloat32();
-      const lockedHeight = reader.readInt32();
-      const contentLocked = reader.readUint8();
-      const motion = reader.readInt32();
-      const press = reader.readInt32();
-      const triggerSync = reader.readInt32();
-      const queued = reader.readUint32();
-      const tolerant = reader.readUint32();
-      const positionSync = reader.readInt32();
-      const grouped = reader.readUint8();
-      const locked = reader.readUint8();
-      const solo = reader.readUint8();
-      const trackMode = reader.readInt32();
-      const targetAudioChannel = reader.readInt32();
-      const targetInstChannel = reader.readInt32();
-      const expanded = reader.readUint8();
-      const instTrackEditMode = reader.readInt32();
-
+    case 238: {
+      // Track Data
+      const flat = readStruct<Record<string, number>>(reader, TrackDataFields);
       return {
-        idx, color, icon, enabled, height, lockedHeight, contentLocked, motion, press, triggerSync,
-        queued, tolerant, positionSync, grouped, locked, solo, trackMode, targetAudioChannel,
-        targetInstChannel, expanded, instTrackEditMode
+        idx: flat.idx,
+        color: { red: flat.red, green: flat.green, blue: flat.blue } as Color,
+        icon: flat.icon,
+        enabled: flat.enabled,
+        height: flat.height,
+        lockedHeight: flat.lockedHeight,
+        contentLocked: flat.contentLocked,
+        motion: flat.motion,
+        press: flat.press,
+        triggerSync: flat.triggerSync,
+        queued: flat.queued,
+        tolerant: flat.tolerant,
+        positionSync: flat.positionSync,
+        grouped: flat.grouped,
+        locked: flat.locked,
+        solo: flat.solo,
+        trackMode: flat.trackMode,
+        targetAudioChannel: flat.targetAudioChannel,
+        targetInstChannel: flat.targetInstChannel,
+        expanded: flat.expanded,
+        instTrackEditMode: flat.instTrackEditMode,
       } as TrackData;
     }
     default:

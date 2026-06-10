@@ -3,23 +3,30 @@ import { getEventType, isStringEvent } from './events.js';
 import {
   FLPProject,
   FLPEvent,
-  Color,
-  AutomationPoint,
   Note,
   MixerParam,
   TrackData,
-  ChannelDelay,
-  PluginWrapper,
   ChannelParameters,
-  ChannelEnvelopeLFO,
-  ChannelLevels,
-  ChannelPolyphony,
-  RemoteController,
-  ChannelTracking,
-  ChannelLevelAdjusts,
   ChannelAutomation,
-  CutGroupEvent
+  CutGroupEvent,
 } from './types.js';
+import {
+  writeStruct,
+  ChannelDelayFields,
+  PluginWrapperFields,
+  ChannelEnvelopeLFOFields,
+  ChannelLevelsFields,
+  ChannelPolyphonyFields,
+  NoteFields,
+  MixerParamFields,
+  RemoteControllerFields,
+  ChannelTrackingFields,
+  ChannelLevelAdjustsFields,
+  AutomationPointFields,
+  AutomationHeaderFields,
+  AutomationFooterFields,
+  TrackDataFields,
+} from './schemas.js';
 
 export function serializeFLP(project: FLPProject): Uint8Array {
   // First, serialize the events stream to get the size
@@ -98,33 +105,18 @@ function serializeStructuredData(id: number, value: FLPEvent['value']): Uint8Arr
   const writer = new BufferWriter();
 
   switch (id) {
-    case 209: { // Channel Delay
-      const val = value as ChannelDelay;
-      writer.writeInt32(val.feedback);
-      writer.writeInt32(val.pan);
-      writer.writeInt32(val.pitchShift);
-      writer.writeInt32(val.echoes);
-      writer.writeInt32(val.time);
+    case 209: {
+      // Channel Delay
+      writeStruct(writer, ChannelDelayFields, value);
       break;
     }
-    case 212: { // Plugin Wrapper
-      const val = value as PluginWrapper;
-      writer.writeInt32(val.mixerInsert);
-      writer.writeInt32(val.mixerSlot);
-      writer.writeInt32(val.u1);
-      writer.writeInt32(val.u2);
-      writer.writeUint32(val.flags);
-      writer.writeUint32(val.page);
-      writer.writeInt32(val.u3);
-      writer.writeInt32(val.u4);
-      writer.writeInt32(val.u5);
-      writer.writeInt32(val.x);
-      writer.writeInt32(val.y);
-      writer.writeUint32(val.width);
-      writer.writeUint32(val.height);
+    case 212: {
+      // Plugin Wrapper
+      writeStruct(writer, PluginWrapperFields, value);
       break;
     }
-    case 215: { // Channel Parameters
+    case 215: {
+      // Channel Parameters
       const val = value as ChannelParameters;
       writer.writeInt32(val.simSynthTempo);
       writer.writeUint8(val.spectrumView);
@@ -180,167 +172,126 @@ function serializeStructuredData(id: number, value: FLPEvent['value']): Uint8Arr
       writer.writeFloat64(val.formantShift);
       break;
     }
-    case 218: { // Channel Envelope LFO
-      const val = value as ChannelEnvelopeLFO;
-      writer.writeInt32(val.flags);
-      writer.writeInt32(val.envelopeEnabled);
-      writer.writeInt32(val.envelopePredelay);
-      writer.writeInt32(val.envelopeAttack);
-      writer.writeInt32(val.envelopeHold);
-      writer.writeInt32(val.envelopeDecay);
-      writer.writeInt32(val.envelopeSustain);
-      writer.writeInt32(val.envelopeRelease);
-      writer.writeInt32(val.envelopeAmount);
-      writer.writeInt32(val.lfoPredelay);
-      writer.writeInt32(val.lfoAttack);
-      writer.writeInt32(val.lfoAmount);
-      writer.writeInt32(val.lfoSpeed);
-      writer.writeInt32(val.lfoShape);
-      writer.writeInt32(val.envelopeAttackTension);
-      writer.writeInt32(val.envelopeDecayTension);
-      writer.writeInt32(val.envelopeReleaseTension);
+    case 218: {
+      // Channel Envelope LFO
+      writeStruct(writer, ChannelEnvelopeLFOFields, value);
       break;
     }
-    case 219: { // Channel Levels
-      const val = value as ChannelLevels;
-      writer.writeInt32(val.pan);
-      writer.writeInt32(val.volume);
-      writer.writeInt32(val.pitch);
-      writer.writeInt32(val.modX);
-      writer.writeInt32(val.modY);
-      writer.writeInt32(val.filterType);
+    case 219: {
+      // Channel Levels
+      writeStruct(writer, ChannelLevelsFields, value);
       break;
     }
-    case 221: { // Channel Polyphony
-      const val = value as ChannelPolyphony;
-      writer.writeInt32(val.max);
-      writer.writeInt32(val.slide);
-      writer.writeUint8(val.type);
+    case 221: {
+      // Channel Polyphony
+      writeStruct(writer, ChannelPolyphonyFields, value);
       break;
     }
-    case 224: { // Pattern Notes
+    case 224: {
+      // Pattern Notes
       const notes = value as Note[];
       for (const note of notes) {
-        writer.writeUint32(note.position);
-        writer.writeUint16(note.flags);
-        writer.writeUint16(note.rack);
-        writer.writeUint32(note.duration);
-        writer.writeUint16(note.key);
-        writer.writeInt16(note.group);
-        writer.writeInt16(note.pitch);
-        writer.writeUint8(note.release);
-        writer.writeUint8(note.midiChannel);
-        writer.writeUint8(note.pan);
-        writer.writeUint8(note.velocity);
-        writer.writeUint8(note.modX);
-        writer.writeUint8(note.modY);
+        writeStruct(writer, NoteFields, note);
       }
       break;
     }
-    case 225: { // Mixer Parameters
+    case 225: {
+      // Mixer Parameters
       const params = value as MixerParam[];
       for (const param of params) {
-        writer.writeInt32(param.u1);
-        writer.writeUint8(param.paramId);
-        writer.writeUint8(param.u2);
-        const bitfield = (param.slot & 0x3f) | ((param.insert & 0x7f) << 6) | ((param.type & 0x07) << 13);
-        writer.writeUint16(bitfield);
-        writer.writeUint32(param.data);
+        const flat = {
+          u1: param.u1,
+          paramId: param.paramId,
+          u2: param.u2,
+          bitfield:
+            (param.slot & 0x3f) | ((param.insert & 0x7f) << 6) | ((param.type & 0x07) << 13),
+          data: param.data,
+        };
+        writeStruct(writer, MixerParamFields, flat);
       }
       break;
     }
-    case 227: { // Remote Controller
-      const val = value as RemoteController;
-      writer.writeUint16(val.internalParam);
-      writer.writeInt32(val.automationChannel);
-      writer.writeUint16(val.u1);
-      writer.writeUint16(val.targetParam);
-      writer.writeUint16(val.generatorChannel);
-      writer.writeUint32(val.params);
-      writer.writeUint32(val.smoothingFactor);
+    case 227: {
+      // Remote Controller
+      writeStruct(writer, RemoteControllerFields, value);
       break;
     }
-    case 228: { // Channel Tracking
-      const val = value as ChannelTracking;
-      writer.writeInt32(val.mid);
-      writer.writeInt32(val.pan);
-      writer.writeInt32(val.modX);
-      writer.writeInt32(val.modY);
+    case 228: {
+      // Channel Tracking
+      writeStruct(writer, ChannelTrackingFields, value);
       break;
     }
-    case 229: { // Channel Level Adjusts
-      const val = value as ChannelLevelAdjusts;
-      writer.writeInt32(val.pan);
-      writer.writeInt32(val.volume);
-      writer.writeInt32(val.pitch);
-      writer.writeInt32(val.modX);
-      writer.writeInt32(val.modY);
+    case 229: {
+      // Channel Level Adjusts
+      writeStruct(writer, ChannelLevelAdjustsFields, value);
       break;
     }
-    case 234: { // Channel Automation
+    case 234: {
+      // Channel Automation
       const val = value as ChannelAutomation;
-      writer.writeInt32(val.version);
-      writer.writeInt32(val.lfoAmount);
-      writer.writeUint8(val.dontMultiplyEnvelopeLevel);
-      writer.writeInt32(val.u1);
-      writer.writeInt32(val.u2);
-      writer.writeInt32(val.points.length);
+      const header = {
+        version: val.version,
+        lfoAmount: val.lfoAmount,
+        dontMultiplyEnvelopeLevel: val.dontMultiplyEnvelopeLevel,
+        u1: val.u1,
+        u2: val.u2,
+        numPoints: val.points.length,
+      };
+      writeStruct(writer, AutomationHeaderFields, header);
 
       for (const pt of val.points) {
-        writer.writeFloat64(pt.delta);
-        writer.writeFloat64(pt.value);
-        writer.writeFloat32(pt.tension);
-        writer.writeUint16(pt.tensionType);
-        writer.writeUint8(pt.isSelected);
-        writer.writeInt8(pt.tensionSign);
+        writeStruct(writer, AutomationPointFields, pt);
       }
 
       writer.writeBytes(val.unknown1);
       writer.writeInt32(val.lfoPoints.length);
 
       for (const pt of val.lfoPoints) {
-        writer.writeFloat64(pt.delta);
-        writer.writeFloat64(pt.value);
-        writer.writeFloat32(pt.tension);
-        writer.writeUint16(pt.tensionType);
-        writer.writeUint8(pt.isSelected);
-        writer.writeInt8(pt.tensionSign);
+        writeStruct(writer, AutomationPointFields, pt);
       }
 
       writer.writeBytes(val.unknown2);
-      writer.writeInt32(val.lfoSpeed);
-      writer.writeInt32(val.lfoTension);
-      writer.writeInt32(val.lfoSkew);
-      writer.writeInt32(val.lfoPulseWidth);
-      writer.writeFloat32(val.lfoOffset);
+
+      const footer = {
+        lfoSpeed: val.lfoSpeed,
+        lfoTension: val.lfoTension,
+        lfoSkew: val.lfoSkew,
+        lfoPulseWidth: val.lfoPulseWidth,
+        lfoOffset: val.lfoOffset,
+      };
+      writeStruct(writer, AutomationFooterFields, footer);
       break;
     }
-    case 238: { // Track Data
+    case 238: {
+      // Track Data
       const val = value as TrackData;
-      writer.writeInt32(val.idx);
-      writer.writeUint8(val.color.red);
-      writer.writeUint8(val.color.green);
-      writer.writeUint8(val.color.blue);
-      writer.writeUint8(0); // unused byte
-      writer.writeInt32(val.icon);
-      writer.writeUint8(val.enabled);
-      writer.writeFloat32(val.height);
-      writer.writeInt32(val.lockedHeight);
-      writer.writeUint8(val.contentLocked);
-      writer.writeInt32(val.motion);
-      writer.writeInt32(val.press);
-      writer.writeInt32(val.triggerSync);
-      writer.writeUint32(val.queued);
-      writer.writeUint32(val.tolerant);
-      writer.writeInt32(val.positionSync);
-      writer.writeUint8(val.grouped);
-      writer.writeUint8(val.locked);
-      writer.writeUint8(val.solo);
-      writer.writeInt32(val.trackMode);
-      writer.writeInt32(val.targetAudioChannel);
-      writer.writeInt32(val.targetInstChannel);
-      writer.writeUint8(val.expanded);
-      writer.writeInt32(val.instTrackEditMode);
+      const flat = {
+        idx: val.idx,
+        red: val.color.red,
+        green: val.color.green,
+        blue: val.color.blue,
+        unused: 0,
+        icon: val.icon,
+        enabled: val.enabled,
+        height: val.height,
+        lockedHeight: val.lockedHeight,
+        contentLocked: val.contentLocked,
+        motion: val.motion,
+        press: val.press,
+        triggerSync: val.triggerSync,
+        queued: val.queued,
+        tolerant: val.tolerant,
+        positionSync: val.positionSync,
+        grouped: val.grouped,
+        locked: val.locked,
+        solo: val.solo,
+        trackMode: val.trackMode,
+        targetAudioChannel: val.targetAudioChannel,
+        targetInstChannel: val.targetInstChannel,
+        expanded: val.expanded,
+        instTrackEditMode: val.instTrackEditMode,
+      };
+      writeStruct(writer, TrackDataFields, flat);
       break;
     }
     default:

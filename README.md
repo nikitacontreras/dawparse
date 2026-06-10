@@ -1,5 +1,7 @@
 # dawparse
 
+[![CI](https://github.com/nikitacontreras/dawparse/actions/workflows/ci.yml/badge.svg)](https://github.com/nikitacontreras/dawparse/actions/workflows/ci.yml)
+
 A lightweight, high-performance, and type-safe parser and serializer for DAW (Digital Audio Workstation) projects. It supports browser (Web) and Node.js (Backend) environments with zero platform dependencies.
 
 Currently, `dawparse` supports parsing and serializing **FL Studio Project files (`.flp`)** and **Zipped Loop Packages (`.zip`)**, with a modular architecture built to scale to other DAWs (like Ableton, Reaper, etc.) in the future.

@@ -1,0 +1,465 @@
+{
+  "audit_metadata": {
+    "schema_version": "2.0.0",
+    "generated_at": "2026-06-09T18:54:20-05:00",
+    "repository": {
+      "name": "dawparse",
+      "slug": "nikitacontreras/dawparse",
+      "version": "1.0.0",
+      "version_source": "package_json",
+      "version_source_detail": "package.json:version",
+      "remote_url": "https://github.com/nikitacontreras/dawparse.git",
+      "web_url": "https://github.com/nikitacontreras/dawparse",
+      "remote_provider": "github",
+      "default_branch": "main",
+      "current_branch": "main",
+      "current_commit_sha": "ecd6fff9437303386a9578998addd055380c9e87",
+      "current_commit_short_sha": "ecd6fff",
+      "last_commit_date": "2026-06-09T18:54:20-05:00",
+      "is_dirty": false,
+      "root_path": "/Users/nikitastrike/Development/flbin",
+      "packages": [
+        {
+          "name": "dawparse",
+          "path": ".",
+          "version": "1.0.0",
+          "manager": "npm"
+        }
+      ]
+    },
+    "detected_stack": [
+      "TypeScript 5.4.5",
+      "Node.js (ES2022 target, NodeNext module)",
+      "tsup (CJS+ESM dual build)",
+      "Vitest 1.6.0",
+      "fflate 0.8.3 (zlib/deflate runtime dependency)"
+    ],
+    "repo_size_classification": "SMALL",
+    "coverage_mode": "full",
+    "analyzed_areas": [
+      "Source code (10 files under src/)",
+      "Test files (2 files under test/)",
+      "Package manifest and lockfile",
+      "TypeScript config",
+      "Build config (tsup)",
+      "Git metadata and history",
+      "Documentation (README, DAW.md)",
+      "Generated declarations (dist/index.d.ts)"
+    ],
+    "excluded_paths": [
+      "node_modules/",
+      "dist/ (build artifacts only, checked index.d.ts for public API surface)",
+      "package-lock.json (standard lockfile, no unusual entries detected)",
+      ".git/"
+    ],
+    "tools_or_commands_used": [
+      "git rev-parse --show-toplevel",
+      "git remote get-url origin",
+      "git remote -v",
+      "git branch --show-current",
+      "git rev-parse HEAD",
+      "git rev-parse --short HEAD",
+      "git log -1 --format=%cI",
+      "git log --oneline -5",
+      "git status --porcelain",
+      "git describe --tags --always --dirty",
+      "git ls-files",
+      "git ls-files --error-unmatch",
+      "git symbolic-ref refs/remotes/origin/HEAD",
+      "wc -l",
+      "rg (ripgrep) for pattern scanning",
+      "find + sort for file tree enumeration"
+    ],
+    "critical_issues_count": 0,
+    "high_issues_count": 1,
+    "medium_issues_count": 4,
+    "low_issues_count": 5,
+    "total_reported_issues_count": 10,
+    "overall_health_score_1_to_100": 69
+  },
+  "coverage_notes": {
+    "fully_reviewed_areas": [
+      "All 10 source files under src/ (100% of production code)",
+      "All 2 test files (complete test surface)",
+      "Configuration files (package.json, tsconfig.json, tsup.config.ts, .gitignore)",
+      "Public API surface via dist/index.d.ts declarations",
+      "Git history (all 5 commits)"
+    ],
+    "samaged_areas": [],
+    "not_exhaustively_reviewed_areas": [
+      "package-lock.json (91KB, standard lockfile - dependency names and versions verified against package.json)"
+    ],
+    "reasoning_for_scope": "Repository classified as SMALL (10 source files, ~1,500 lines TypeScript, 2 test files). All production and test files were read in full. No sampling was needed. Every finding is backed by direct code evidence."
+  },
+  "limitations": [
+    {
+      "area": "Dependency vulnerability analysis",
+      "reason": "No npm audit, pnpm audit, or Snyk was executed. CVE assertions are not made for dependencies. Only manifest structure and dependency count are assessed.",
+      "impact_on_confidence": "LOW"
+    },
+    {
+      "area": "Runtime behavior",
+      "reason": "No tests were executed during this audit. Findings are based on static analysis only.",
+      "impact_on_confidence": "LOW"
+    },
+    {
+      "area": "External integrations",
+      "reason": "No runtime environments, deployed instances, or production infrastructure were inspected. Audit is limited to repository contents.",
+      "impact_on_confidence": "LOW"
+    }
+  ],
+  "secrets_leakage": [],
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "testing",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "file_path": "test/zip.test.ts",
+      "line_numbers": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119],
+      "component_or_module": "zip parsing test suite",
+      "evidence": ".gitignore line 12: \"test/zip.test.ts\". File exists at test/zip.test.ts on disk but git ls-files confirms it is NOT tracked. Two of its three tests (lines 45-98, 101-118) reference untitled.zip which is also gitignored (line 8) and not tracked (verified via git ls-files --error-unmatch). First test (lines 8-43) creates self-contained mock zip and would pass in isolation. Running vitest locally includes this file; running in CI does not.",
+      "problem_description": "The entire test/zip.test.ts file is excluded from version control via .gitignore despite being present on disk. Two of its three tests depend on untitled.zip, a 9.4MB binary also excluded from git. The test file is invisible to collaborators, cannot run in CI, and creates a false sense of coverage locally. The .gitignore rule explicitly suppresses this file.",
+      "business_impact": "CI pipeline silently excludes zip parsing tests. Developers see passing tests locally but CI runs zero zip-related tests. Collaborators have no visibility into zip test definitions. Regression in zip parsing could ship undetected.",
+      "technical_impact": "Complete CI blind spot for the zip loop package parsing feature. The zip module (src/flstudio/zip.ts) depends on fflate unzipSync and the core parser but has zero CI-visible test coverage. Any breaking change to zip parsing flows is invisible to automated pipelines.",
+      "remediation_plan": {
+        "strategy": "1. Remove test/zip.test.ts from .gitignore. 2. Either commit a small synthetic .zip fixture under version control OR refactor the two real-file tests to generate their own mock ZIP via fflate zipSync (as the first test already does). 3. Delete the 9.4MB untitled.zip from the workspace if it is no longer needed.",
+        "priority": "short_term",
+        "estimated_effort": "small",
+        "code_before": "test/zip.test.ts\nuntitled.zip",
+        "code_after": null,
+        "verification_steps": [
+          "Remove 'test/zip.test.ts' and 'untitled.zip' lines from .gitignore",
+          "Run 'git add test/zip.test.ts' to track the file",
+          "Refactor real-file tests (lines 45-118) to use synthetic zip via zipSync",
+          "Run 'npm test' to verify all tests pass without untitled.zip",
+          "Delete untitled.zip (9.4MB) from workspace root"
+        ]
+      }
+    },
+    {
+      "id": "F-002",
+      "category": "type_safety",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "file_path": "src/flstudio/parser.ts",
+      "line_numbers": [129, 146, 210, 235, 245, 252, 301, 309, 318, 375, 410],
+      "component_or_module": "binary deserialization (parseStructuredData)",
+      "evidence": "Every switch-case branch in parseStructuredData returns with an 'as Type' cast: 'as ChannelDelay' (line 129), 'as PluginWrapper' (line 146), 'as ChannelParameters' (line 210), 'as ChannelEnvelopeLFO' (line 235), 'as ChannelLevels' (line 245), 'as ChannelPolyphony' (line 252), 'as RemoteController' (line 301), 'as ChannelTracking' (line 309), 'as ChannelLevelAdjusts' (line 318), 'as ChannelAutomation' (line 375), 'as TrackData' (line 410). The same pattern exists in serializeStructuredData: 'value as Type' casts throughout.",
+      "problem_description": "All structured event deserialization relies on unchecked 'as Type' assertions that disable TypeScript's structural validation. If the binary payload format shifts (FL Studio version update), if field sizes change, or if the read order diverges from the writer, no compile-time or runtime error surfaces. The cast silently assumes the bytes match the interface.",
+      "business_impact": "FL Studio format updates or parser bugs could silently produce corrupted data objects without warning. Users would receive structurally valid but semantically wrong FLP data. Debugging would require deep binary analysis.",
+      "technical_impact": "The type system cannot detect structural drift between parser.ts and serializer.ts. Adding a field to a type requires manual synchronization in both files. No runtime validation maps raw bytes to the expected shape. Unknown bytes are silently consumed or misinterpreted.",
+      "remediation_plan": {
+        "strategy": "Short-term: add a validation helper per event type that checks payload length matches expected struct size and logs/throws on mismatch. Medium-term: generate parser/serializer from a shared schema definition (e.g., a field descriptor array) to eliminate dual maintenance and add automatic bounds checking.",
+        "priority": "short_term",
+        "estimated_effort": "medium",
+        "code_before": "const val = reader.readInt32(); ... return { feedback, pan } as ChannelDelay;",
+        "code_after": "const result = { feedback: reader.readInt32(), pan: reader.readInt32() }; if (payload.length !== EXPECTED_LENGTHS[209]) throw new Error('ChannelDelay size mismatch'); return result;",
+        "verification_steps": [
+          "Define expected payload lengths for each structured event ID",
+          "Add length assertions after parsing each event type",
+          "Run all existing tests to verify roundtrip still matches expected sizes",
+          "Add a test with artificially malformed payload to verify the assertion fires"
+        ]
+      }
+    },
+    {
+      "id": "F-003",
+      "category": "error_handling",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "file_path": "src/flstudio/parser.ts",
+      "line_numbers": [123, 131, 149, 213, 238, 247, 293, 304, 312, 321, 342, 345, 361, 364, 378],
+      "component_or_module": "binary deserialization (payload length guards)",
+      "evidence": "Multiple event parsers use the pattern 'if (payload.length < N) return payload;' which returns the raw Uint8Array instead of the structured type: ChannelDelay (line 123), PluginWrapper (line 131), ChannelParameters (line 149), ChannelEnvelopeLFO (line 213), ChannelLevels (line 238), ChannelPolyphony (line 247), RemoteController (line 293), ChannelTracking (line 304), ChannelLevelAdjusts (line 312), ChannelAutomation (lines 321, 342, 345, 361, 364), TrackData (line 378).",
+      "problem_description": "When the payload is shorter than expected, the parser silently returns the raw Uint8Array instead of throwing an error. The caller receives a value typed as the structured interface but containing raw bytes. This masks binary corruption, format version mismatches, and truncation. Downstream consumers operating on the typed interface will encounter runtime errors for missing properties, but the causal error is lost.",
+      "business_impact": "Corrupted or truncated FLP files produce silent data degradation instead of clear error messages. Users cannot distinguish between 'valid format with different version' and 'corrupted file'. Debugging requires inspecting raw binary.",
+      "technical_impact": "The fallback returns 'value as ChannelDelay' but the actual value is Uint8Array. The type assertion covers up a type error. Any consumer that calls methods on the expected interface properties will get undefined or throw, but the root cause (short payload) is opaque. This is both a type safety and error handling gap.",
+      "remediation_plan": {
+        "strategy": "Replace 'if (payload.length < N) return payload;' with 'if (payload.length !== N) throw new Error(...)' for fixed-size structures. For variable-length structures, use minimum threshold and check remaining bytes before each read.",
+        "priority": "short_term",
+        "estimated_effort": "small",
+        "code_before": "if (payload.length < 20) return payload;",
+        "code_after": "if (payload.length < 20) throw new Error('ChannelDelay: expected at least 20 bytes, got ' + payload.length);",
+        "verification_steps": [
+          "Replace each silent return with a descriptive error throw",
+          "Run existing tests (all use well-formed data, should not trigger)",
+          "Add a test with truncated event payload to verify the error message",
+          "Run npm test to confirm no regressions"
+        ]
+      }
+    },
+    {
+      "id": "F-004",
+      "category": "dry_violation",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "file_path": "src/flstudio/parser.ts",
+      "line_numbers": [121, 122, 123, 124, 125, 126, 127, 128, 129],
+      "component_or_module": "parser/serializer event structure definitions",
+      "evidence": "The field-level read/write order for each structured event type is defined independently in parser.ts (parseStructuredData, 55+ field accesses) and serializer.ts (serializeStructuredData, 55+ field accesses). For example, ChannelDelay reads/writes same 5 fields in identical order in both files. ChannelParameters requires 40+ field operations duplicated across both files (parser.ts lines 149-211, serializer.ts lines 127-181). A field addition or reorder must be manually synchronized in two locations with no automated enforcement.",
+      "problem_description": "The same binary layout knowledge is encoded twice: once in the parser (reading bytes) and once in the serializer (writing bytes). There is no shared schema that both derive from. Any change to a structured event type requires identical modifications in two files. This creates a persistent desynchronization risk where read and write order diverge, producing silent data corruption on roundtrips.",
+      "business_impact": "Adding support for new FLP event types or updating existing ones requires duplicated effort. A single-field typo or order mismatch between parser and serializer produces silently corrupted FLP files on save. Data integrity depends entirely on manual discipline.",
+      "technical_impact": "The roundtrip tests (flp.test.ts) would catch some desynchronizations but not all (e.g., if field values contain patterns that match after bit corruption). The DRY violation increases maintenance cost for each new event type and increases the bug surface for format evolution.",
+      "remediation_plan": {
+        "strategy": "Introduce a schema-driven code generation approach or shared field descriptors. Define each event type as an ordered array of field descriptors (name, type, size, read/write functions) and derive both parse and serialize from it. This eliminates the dual-maintenance surface.",
+        "priority": "medium_term",
+        "estimated_effort": "large",
+        "code_before": "// parser.ts\ncase 209: { feedback: reader.readInt32(); ... return {feedback, pan} as ChannelDelay; }\n// serializer.ts\ncase 209: { writer.writeInt32(val.feedback); ... }",
+        "code_after": "// shared schema\nconst CHANNEL_DELAY_FIELDS = [\n  { name: 'feedback', type: 'int32' },\n  { name: 'pan', type: 'int32' },\n  ...\n];",
+        "verification_steps": [
+          "Define field descriptors for one event type (e.g., ChannelDelay)",
+          "Implement a generic read/write function that operates on descriptors",
+          "Replace the manual parser.ts and serializer.ts branches with generic calls",
+          "Run all roundtrip tests to verify byte-level equivalence",
+          "Migrate remaining event types incrementally"
+        ]
+      }
+    },
+    {
+      "id": "F-005",
+      "category": "testing",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "file_path": "test/flp.test.ts",
+      "line_numbers": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201],
+      "component_or_module": "full test surface",
+      "evidence": "All tests in flp.test.ts (two tests) test only the happy path with perfectly formed data. No tests for: truncated input (parser.ts line 28 checks minimum length 22 bytes but no test exercises it), invalid magic bytes (lines 33-34, 42-44), buffer overflow conditions (all reader methods throw on overflow but no test triggers this), unknown event IDs (parser.ts line 95), unsupported event IDs in serializer (serializer.ts line 347), malformed structured data payloads, empty events array, edge cases for all structured event types.",
+      "problem_description": "Zero negative or edge-case tests exist for the binary parser. Binary parsers are uniquely vulnerable to malformed input: a single wrong byte can cause out-of-bounds reads, infinite loops, or silent data corruption. The reader.ts overflow checks (lines 21, 26, 31, 38, 45, 52, 58, 65, 72, 81) are untested. The parser's format validation (magic bytes, minimum size) is untested. No fuzzing or property-based testing is used.",
+      "business_impact": "Malformed FLP files (from network errors, disk corruption, or version mismatches) could crash the parser, hang it, or produce silently corrupted results. Users consuming the library in browsers could encounter unhandled exceptions with no graceful recovery path.",
+      "technical_impact": "The error handling code in parser.ts is dead code under test. Bugs in buffer overflow detection, magic byte validation, or structured data parsing are invisible until a real malformed file is encountered. The roundtrip tests only validate that well-formed data survives, not that the parser degrades safely.",
+      "remediation_plan": {
+        "priority": "medium_term",
+        "estimated_effort": "medium",
+        "strategy": "Add a dedicated test suite for error/edge cases covering: (1) empty Uint8Array, (2) truncated after header, (3) truncated mid-event, (4) invalid magic bytes, (5) corrupted event sizes, (6) extremely large event count, (7) unknown event IDs, (8) malformed varint encoding in data events, (9) unsupported structured event IDs in serializer. Each test should assert the specific error message or throw behavior.",
+        "code_before": null,
+        "code_after": null,
+        "verification_steps": [
+          "Create test/flp-edge-cases.test.ts",
+          "Add 9+ test cases covering each scenario listed above",
+          "Add a test for BufferReader buffer overflow on each read method",
+          "Run npm test to verify errors produce consistent messages",
+          "Consider adding a fuzz test harness for long-tail coverage"
+        ]
+      }
+    },
+    {
+      "id": "F-006",
+      "category": "infrastructure",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "file_path": ".gitignore",
+      "line_numbers": [8, 9, 11, 12],
+      "component_or_module": "repository hygiene",
+      "evidence": "untitled.zip (9,423,563 bytes, ~9MB) exists at repository root and is listed in .gitignore line 8. The file is NOT tracked by git (verified via git ls-files --error-unmatch). This is a local-only development artifact that consumes disk space but does not bloat repository history.",
+      "problem_description": "A 9.4MB binary zip file sits at the repository root. It is properly gitignored but occupies significant local disk space and is referenced by test/zip.test.ts which is itself gitignored. The file appears to be an FL Studio project export used for manual testing. Its presence alongside the gitignored test file creates a confusing local development environment where tests pass only because a large binary happens to be present.",
+      "business_impact": "Developers cloning the repo and following setup instructions will have a broken test suite unless they independently obtain untitled.zip. 9.4MB of workspace overhead for a local-only artifact.",
+      "technical_impact": "The workspace contains test-only infrastructure that cannot be reproduced by CI or collaborators. The zip parsing integration tests depend on a file that exists on exactly one machine.",
+      "remediation_plan": {
+        "strategy": "If untitled.zip is only needed for the tests in test/zip.test.ts, those tests should be refactored to use synthetic data (as the first test already does) and the file should be deleted. If the file provides unique test coverage, it should be committed as a small synthetic fixture rather than a full 9MB export.",
+        "priority": "short_term",
+        "estimated_effort": "small",
+        "code_before": null,
+        "code_after": null,
+        "verification_steps": [
+          "Determine if untitled.zip provides test value beyond synthetic data",
+          "If not: delete untitled.zip, refactor zip tests to use zipSync-only",
+          "If yes: extract minimal FLP fixture (<100KB), commit it, delete original",
+          "Verify npm test passes without untitled.zip"
+        ]
+      }
+    },
+    {
+      "id": "F-007",
+      "category": "infrastructure",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "file_path": ".github/",
+      "line_numbers": [],
+      "component_or_module": "CI/CD",
+      "evidence": "No .github/ directory, no CI configuration files, no Makefile, no Dockerfile, no shell scripts for automation exist in the repository. git log shows only 5 commits from a single author. No CI badges in README.",
+      "problem_description": "The repository has no CI/CD pipeline defined. There is no automated test runner on push or PR, no type checker, no linter, no build verification. The npm test and npm run build scripts exist but must be invoked manually. Errors can be merged without any automated verification.",
+      "business_impact": "Contributors have no automated quality gate before merging. A broken build or failing tests would not be detected until a developer runs the commands locally. For a published npm library, this increases the risk of shipping broken code.",
+      "technical_impact": "No automated feedback loop for code quality. No type-checking regression detection. No build artifact verification. Adding CI at this early stage (5 commits) is low effort and establishes good practices before the project grows.",
+      "remediation_plan": {
+        "strategy": "Create a GitHub Actions workflow that runs on push and pull_request to main: install dependencies, run type checking (tsc --noEmit), run tests (npm test), and verify build (npm run build).",
+        "priority": "short_term",
+        "estimated_effort": "small",
+        "code_before": null,
+        "code_after": null,
+        "verification_steps": [
+          "Create .github/workflows/ci.yml",
+          "Add jobs for install, typecheck, test, build",
+          "Push to a branch and verify CI passes",
+          "Add CI status badge to README"
+        ]
+      }
+    },
+    {
+      "id": "F-008",
+      "category": "configuration",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "file_path": "package.json",
+      "line_numbers": [19, 20, 21, 22, 23, 24],
+      "component_or_module": "project configuration",
+      "evidence": "package.json scripts only include: build (line 20), test (line 21), test:watch (line 22), prepublishOnly (line 23). There is no lint script, no format script, no typecheck script. No eslintConfig, prettier, or editorconfig fields exist. tsconfig has strict: true (line 11) but there is no way to run tsc --noEmit via npm scripts.",
+      "problem_description": "The project lacks code quality tooling configuration. There is no linter (ESLint), no formatter (Prettier), no editor settings (.editorconfig), and no type-check npm script. While tsconfig has strict: true, there is no CI or npm script to run tsc --noEmit for type verification. Code style consistency relies entirely on developer discipline.",
+      "business_impact": "Code style inconsistencies accumulate over time. Type errors can exist in the codebase without detection (tsup runs tsc as part of build but only for declaration generation, with skipLibCheck: true). Contributors have no automated formatting guidance.",
+      "technical_impact": "Type-checking is not part of the test or build pipeline in a way that blocks bad merges. The tsup build produces output but may not catch all type errors (tsup delegates type checking to TypeScript compiler only for declaration emit).",
+      "remediation_plan": {
+        "strategy": "Add eslint and prettier configuration. Add npm scripts for 'lint', 'format', and 'typecheck' (tsc --noEmit). Consider adding husky + lint-staged for pre-commit hooks.",
+        "priority": "short_term",
+        "estimated_effort": "small",
+        "code_before": null,
+        "code_after": null,
+        "verification_steps": [
+          "Install eslint, prettier, eslint-config-prettier as devDependencies",
+          "Create .eslintrc and .prettierrc config files",
+          "Add scripts: lint, format, typecheck to package.json",
+          "Run lint and typecheck to verify they pass on current code"
+        ]
+      }
+    },
+    {
+      "id": "F-009",
+      "category": "type_safety",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "file_path": "src/flstudio/class.ts",
+      "line_numbers": [41],
+      "component_or_module": "FLP class (error handler)",
+      "evidence": "Line 41: 'catch (err: any)' catches the thrown value with type 'any'. The error message is then constructed with optional chaining: 'err?.message || err'. While functional, the 'any' annotation disables type checking on the caught error.",
+      "problem_description": "The catch clause uses an explicit 'any' type annotation instead of 'unknown'. In strict TypeScript mode (tsconfig strict: true), 'unknown' is the preferred type for caught errors because it forces narrowing before use. While the code guards with optional chaining, the 'any' type is unnecessary and bypasses the type system.",
+      "business_impact": "Minimal direct impact on production behavior. However, it is a type hygiene issue in an otherwise type-safe codebase (no other 'any' annotations in production code).",
+      "technical_impact": "If thrown values are not Error instances, the optional chaining handles it. But TypeScript cannot verify this. The 'any' annotation is a minor type system gap in an otherwise well-typed file.",
+      "remediation_plan": {
+        "strategy": "Replace 'catch (err: any)' with 'catch (err: unknown)' and narrow the type before accessing properties.",
+        "priority": "short_term",
+        "estimated_effort": "small",
+        "code_before": "} catch (err: any) {\n  throw new Error(`Failed to read file at path \"${input}\": ${err?.message || err}`);",
+        "code_after": "} catch (err: unknown) {\n  const message = err instanceof Error ? err.message : String(err);\n  throw new Error(`Failed to read file at path \"${input}\": ${message}`);",
+        "verification_steps": [
+          "Replace 'err: any' with 'err: unknown'",
+          "Add type narrowing: err instanceof Error ? err.message : String(err)",
+          "Run 'npm test' to verify error handling still works",
+          "Run 'npm run build' to verify type checking passes"
+        ]
+      }
+    },
+    {
+      "id": "F-010",
+      "category": "type_safety",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "file_path": "test/flp.test.ts",
+      "line_numbers": [195],
+      "component_or_module": "test suite (automation event assertion)",
+      "evidence": "Line 195: 'const parsedAutomation = flp.project.events[2].value as any;' The test assigns the value of event ID 234 (ChannelAutomation) to a variable typed as 'any' to access its nested properties (points, lfoSpeed, etc.) without TypeScript checking.",
+      "problem_description": "The test uses an 'as any' cast to bypass TypeScript's type checking on the ChannelAutomation value. The FLPEvent.value union type includes ChannelAutomation, but the type system does not narrow based on event.id. Rather than asserting the correct type, the test escapes to 'any', losing type safety for property access assertions.",
+      "business_impact": "Test type safety gap. If the ChannelAutomation interface changes (e.g., 'points' is renamed to 'automationPoints'), the test would still compile but fail at runtime. The 'as any' cast prevents TypeScript from catching the mismatch.",
+      "technical_impact": "The test would benefit from a proper type assertion: 'as ChannelAutomation' instead of 'as any'. This would preserve type checking on the subsequent property accesses.",
+      "remediation_plan": {
+        "strategy": "Replace 'as any' with 'as ChannelAutomation' and import the ChannelAutomation type. This preserves TypeScript validation on the test's property assertions.",
+        "priority": "short_term",
+        "estimated_effort": "small",
+        "code_before": "const parsedAutomation = flp.project.events[2].value as any;\nexpect(parsedAutomation.points).toHaveLength(1);",
+        "code_after": "import { ChannelAutomation } from '../src/index.js';\nconst parsedAutomation = flp.project.events[2].value as ChannelAutomation;\nexpect(parsedAutomation.points).toHaveLength(1);",
+        "verification_steps": [
+          "Import ChannelAutomation type in test file",
+          "Replace 'as any' with 'as ChannelAutomation'",
+          "Run 'npm test' to confirm assertions still pass",
+          "Run 'npm run build' to verify type checking"
+        ]
+      }
+    }
+  ],
+  "dependency_assessment": {
+    "manifests_found": [
+      "package.json"
+    ],
+    "lockfiles_found": [
+      "package-lock.json"
+    ],
+    "audit_tool_results_available": false,
+    "tools_used": [],
+    "issues": [
+      {
+        "package_name": "fflate",
+        "current_version": "^0.8.3",
+        "issue_type": "outdated",
+        "severity": "LOW",
+        "confidence": "LOW",
+        "evidence": "No npm audit or CVE scan was executed. fflate 0.8.x is actively maintained with no known unpatched advisories at time of audit.",
+        "recommended_action": "Run 'npm audit' to check for known vulnerabilities. Update fflate to latest available 0.8.x if any security patches exist."
+      }
+    ]
+  },
+  "deferred_findings_summary": [
+    {
+      "area": "Serializer type assertions",
+      "reason": "Same pattern as F-002 in parser.ts; structurally identical issue in serializer.ts. Not listed as separate finding to avoid duplication.",
+      "risk_level": "MEDIUM",
+      "recommended_follow_up": "Apply same remediation approach from F-002 to serializer.ts when schema-driven approach is implemented."
+    },
+    {
+      "area": "Build output review",
+      "reason": "dist/index.d.ts was reviewed but dist/index.js and dist/index.cjs are compiled output. No runtime analysis was performed on bundled artifacts.",
+      "risk_level": "LOW",
+      "recommended_follow_up": "Verify built bundles with an integration test that imports the library and runs a full parse-serialize-roundtrip."
+    }
+  ],
+  "strategic_roadmap": [
+    {
+      "phase_number": 1,
+      "focus_area": "CI and test reliability",
+      "objective": "Establish automated quality gates and fix invisible test surface",
+      "action_items": [
+        "Add GitHub Actions CI with install, typecheck, test, build steps",
+        "Refactor zip tests to use synthetic data and remove .gitignore exclusion",
+        "Delete or replace untitled.zip with a small committed test fixture",
+        "Add negative/edge-case test suite for parser robustness"
+      ],
+      "success_criteria": [
+        "CI passes on every push to main",
+        "All 3 zip tests run in CI without external binary dependency",
+        "Parser error paths have >80% test coverage"
+      ],
+      "expected_risk_reduction": "HIGH"
+    },
+    {
+      "phase_number": 2,
+      "focus_area": "Parser/serializer architecture",
+      "objective": "Eliminate structural duplication and harden binary deserialization",
+      "action_items": [
+        "Define shared field descriptors for each structured event type",
+        "Derive parser and serializer from descriptors to eliminate dual maintenance",
+        "Add payload length validation with descriptive error messages",
+        "Replace silent Uint8Array fallback with explicit error throws"
+      ],
+      "success_criteria": [
+        "All event types parsed and serialized from single descriptor definition",
+        "Payload length mismatches produce clear error messages with expected vs actual sizes",
+        "Roundtrip tests still pass with byte-level fidelity"
+      ],
+      "expected_risk_reduction": "HIGH"
+    },
+    {
+      "phase_number": 3,
+      "focus_area": "Code quality tooling",
+      "objective": "Add formatter, linter, and type-check automation",
+      "action_items": [
+        "Install and configure ESLint with TypeScript rules",
+        "Install and configure Prettier",
+        "Add npm scripts for lint, format, typecheck",
+        "Fix 'err: any' and 'as any' type escape findings"
+      ],
+      "success_criteria": [
+        "Lint and type-check pass on all source and test files",
+        "No 'any' type escapes remain in production code",
+        "Prettier produces consistent formatting across all files"
+      ],
+      "expected_risk_reduction": "MEDIUM"
+    }
+  ]
+}

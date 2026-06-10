@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FLP, FLPProject, Note, AutomationPoint, TrackData } from '../src/index.js';
+import { FLP, FLPProject, Note, AutomationPoint, TrackData, ChannelAutomation } from '../src/index.js';
 
 describe('FLP Parser & Serializer Roundtrip', () => {
   it('should parse and serialize a simple project with text, byte, and word events', () => {
@@ -11,34 +11,34 @@ describe('FLP Parser & Serializer Roundtrip', () => {
         channelCount: 1,
         ppq: 96,
         dataMagic: 'FLdt',
-        eventSize: 0
+        eventSize: 0,
       },
       events: [
         {
           id: 194, // Project Title
           name: 'Project Title',
           type: 'data',
-          value: 'My Beautiful Song'
+          value: 'My Beautiful Song',
         },
         {
           id: 2, // Channel Volume (Byte)
           name: 'Channel Volume (Byte)',
           type: 'byte',
-          value: 100
+          value: 100,
         },
         {
           id: 72, // Channel Volume (Word)
           name: 'Channel Volume (Word)',
           type: 'word',
-          value: 12500
+          value: 12500,
         },
         {
           id: 132, // Channel Cut Group
           name: 'Channel Cut Group',
           type: 'cutGroup',
-          value: { cutGroup: 1, cutBy: 2 }
-        }
-      ]
+          value: { cutGroup: 1, cutBy: 2 },
+        },
+      ],
     };
 
     const originalFLP = new FLP({ project });
@@ -84,7 +84,7 @@ describe('FLP Parser & Serializer Roundtrip', () => {
       pan: 64,
       velocity: 100,
       modX: 64,
-      modY: 64
+      modY: 64,
     };
 
     const automationPoint: AutomationPoint = {
@@ -93,7 +93,7 @@ describe('FLP Parser & Serializer Roundtrip', () => {
       tension: 0.5,
       tensionType: 0,
       isSelected: 0,
-      tensionSign: 1
+      tensionSign: 1,
     };
 
     const track: TrackData = {
@@ -117,7 +117,7 @@ describe('FLP Parser & Serializer Roundtrip', () => {
       targetAudioChannel: -1,
       targetInstChannel: -1,
       expanded: 1,
-      instTrackEditMode: 0
+      instTrackEditMode: 0,
     };
 
     const project: FLPProject = {
@@ -128,20 +128,20 @@ describe('FLP Parser & Serializer Roundtrip', () => {
         channelCount: 8,
         ppq: 192,
         dataMagic: 'FLdt',
-        eventSize: 0
+        eventSize: 0,
       },
       events: [
         {
           id: 224, // Pattern Notes
           name: 'Pattern Notes',
           type: 'data',
-          value: [note1]
+          value: [note1],
         },
         {
           id: 238, // Track Data
           name: 'Track Data',
           type: 'data',
-          value: track
+          value: track,
         },
         {
           id: 234, // Channel Automation
@@ -163,10 +163,10 @@ describe('FLP Parser & Serializer Roundtrip', () => {
             lfoTension: 0,
             lfoSkew: 0,
             lfoPulseWidth: 0,
-            lfoOffset: 0
-          }
-        }
-      ]
+            lfoOffset: 0,
+          },
+        },
+      ],
     };
 
     const originalFLP = new FLP({ project });
@@ -192,7 +192,7 @@ describe('FLP Parser & Serializer Roundtrip', () => {
 
     // Event 2: Automation
     expect(flp.project.events[2].id).toBe(234);
-    const parsedAutomation = flp.project.events[2].value as any;
+    const parsedAutomation = flp.project.events[2].value as ChannelAutomation;
     expect(parsedAutomation.points).toHaveLength(1);
     expect(parsedAutomation.points[0].value).toBeCloseTo(0.8);
     expect(parsedAutomation.points[0].tensionSign).toBe(1);

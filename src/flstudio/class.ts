@@ -38,8 +38,9 @@ export class FLP {
         try {
           const buf = fs.readFileSync(input);
           return new Uint8Array(buf);
-        } catch (err: any) {
-          throw new Error(`Failed to read file at path "${input}": ${err?.message || err}`);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          throw new Error(`Failed to read file at path "${input}": ${message}`);
         }
       } else {
         throw new Error('Reading from local file path is only supported in Node.js environment.');
@@ -49,7 +50,9 @@ export class FLP {
     } else if (input instanceof Uint8Array) {
       return input;
     } else {
-      throw new Error('Invalid input type. Expected string (file path), Uint8Array, or ArrayBuffer.');
+      throw new Error(
+        'Invalid input type. Expected string (file path), Uint8Array, or ArrayBuffer.',
+      );
     }
   }
 
