@@ -896,17 +896,26 @@ const version = pkg.version;
                 }
                 
                 if (matchedFileBuffer) {
-                  // Create a clean, exact-size copy of the buffer. Zip extractors often return views 
-                  // over a larger shared memory pool which breaks decodeAudioData.
-                  const cleanUint8Array = new Uint8Array(matchedFileBuffer);
-                  const arrayBuffer = cleanUint8Array.buffer;
+                  // Safely slice the buffer from the Uint8Array
+                  const arrayBuffer = matchedFileBuffer.buffer.slice(
+                    matchedFileBuffer.byteOffset,
+                    matchedFileBuffer.byteOffset + matchedFileBuffer.byteLength
+                  );
                   
-                  audioCtx!.decodeAudioData(arrayBuffer, (decodedData) => {
-                    sampleBuffers[ch.index] = decodedData;
-                  }).catch(e => {
-                    console.warn('Failed to decode audio for channel', ch.index, e);
-                    console.warn(`Attempted to decode buffer of size: ${arrayBuffer.byteLength} bytes`);
-                  });
+                  try {
+                    // Use standard success/error callbacks for maximum browser compatibility (Safari)
+                    audioCtx!.decodeAudioData(
+                      arrayBuffer, 
+                      (decodedData) => {
+                        sampleBuffers[ch.index] = decodedData;
+                      },
+                      (e) => {
+                        console.warn('Failed to decode audio for channel', ch.index, e);
+                      }
+                    );
+                  } catch (e) {
+                    console.warn('Sync error decoding audio for channel', ch.index, e);
+                  }
                 }
               }
             });
