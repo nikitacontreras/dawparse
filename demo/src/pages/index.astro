@@ -786,18 +786,39 @@ const version = pkg.version;
               </div>
             `;
 
+            const samplePath = ch.samplePath || '';
+            let sampleContent = '';
+            if (samplePath === 'Generator (No Sample)' || !samplePath) {
+              sampleContent = `<span class="text-neutral-400 italic">Generator (No Sample)</span>`;
+            } else {
+              const filename = samplePath.split('\\').pop()?.split('/').pop() || samplePath;
+              sampleContent = `
+                <details class="group">
+                  <summary class="cursor-pointer list-none flex items-center gap-1.5 hover:text-neutral-900 transition-colors">
+                    <svg class="w-3.5 h-3.5 text-neutral-400 group-open:rotate-90 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                    <span class="truncate font-semibold text-neutral-700 max-w-[150px] sm:max-w-[250px] md:max-w-[350px]" title="${filename}">${filename}</span>
+                  </summary>
+                  <div class="mt-2.5 mb-1 pl-3 pr-2 py-2.5 bg-white border border-neutral-200 rounded-md text-[10px] text-neutral-500 break-all shadow-sm relative">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-neutral-200 rounded-l-md"></div>
+                    <strong class="font-semibold text-neutral-800 block mb-1 uppercase tracking-wide">Full Source Path</strong>
+                    ${samplePath}
+                  </div>
+                </details>
+              `;
+            }
+
             row.innerHTML = `
-              <td class="py-3 px-4 text-center font-semibold text-neutral-500">${ch.index + 1}</td>
-              <td class="py-3 px-4 font-semibold text-neutral-900 truncate max-w-[176px]" title="${ch.name}">${ch.name}</td>
-              <td class="py-3 px-4 text-neutral-600 font-mono text-xs">
-                <div class="max-w-xs sm:max-w-md md:max-w-lg truncate" title="${ch.samplePath}">
-                  ${ch.samplePath}
-                </div>
+              <td class="py-3 px-4 align-top text-center font-semibold text-neutral-500">${ch.index + 1}</td>
+              <td class="py-3 px-4 align-top font-semibold text-neutral-900 truncate max-w-[176px]" title="${ch.name}">${ch.name}</td>
+              <td class="py-3 px-4 align-top text-neutral-600 font-mono text-xs">
+                ${sampleContent}
               </td>
-              <td class="py-3 px-4 text-center"><span class="inline-flex justify-center">${activeIcon}</span></td>
-              <td class="py-3 px-4 text-right text-neutral-700 font-mono">${ch.volume}%</td>
-              <td class="py-3 px-4 text-right">${panSlider}</td>
-              <td class="py-3 px-4 text-center">
+              <td class="py-3 px-4 align-top text-center"><span class="inline-flex justify-center mt-0.5">${activeIcon}</span></td>
+              <td class="py-3 px-4 align-top text-right text-neutral-700 font-mono"><span class="mt-0.5 block">${ch.volume}%</span></td>
+              <td class="py-3 px-4 align-top text-right"><div class="mt-1.5">${panSlider}</div></td>
+              <td class="py-3 px-4 align-top text-center">
                 <button class="btn-play-channel w-6 h-6 inline-flex items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 transition-colors" data-channel-idx="${ch.index}" title="Play Sample">
                   ${PLAY_SVG}
                 </button>
