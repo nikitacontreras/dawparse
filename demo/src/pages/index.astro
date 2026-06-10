@@ -343,7 +343,11 @@ const version = pkg.version;
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.324-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" /></svg>
                     <span>Play</span>
                   </button>
-                  <button id="btn-stop-preview" class="text-[10px] bg-red-600 hover:bg-red-700 text-white font-semibold px-2 py-0.5 rounded flex items-center space-x-1 cursor-pointer transition-colors shadow-sm hidden" title="Stop MIDI sequence preview">
+                  <button id="btn-pause-preview" class="text-[10px] bg-amber-500 hover:bg-amber-600 text-white font-semibold px-2 py-0.5 rounded flex items-center space-x-1 cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" title="Pause/Resume preview" disabled>
+                    <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3"><path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z" /></svg>
+                    <span id="text-pause">Pause</span>
+                  </button>
+                  <button id="btn-stop-preview" class="text-[10px] bg-red-600 hover:bg-red-700 text-white font-semibold px-2 py-0.5 rounded flex items-center space-x-1 cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" title="Stop MIDI sequence preview" disabled>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3"><path d="M5.25 3A2.25 2.25 0 003 5.25v9.5A2.25 2.25 0 005.25 17h9.5A2.25 2.25 0 0017 14.75v-9.5A2.25 2.25 0 0014.75 3h-9.5z" /></svg>
                     <span>Stop</span>
                   </button>
@@ -505,8 +509,11 @@ const version = pkg.version;
       const patternButtonsList = document.getElementById('pattern-buttons-list')!;
       const channelSelectorContainer = document.getElementById('channel-selector-container')!;
       const channelButtonsList = document.getElementById('channel-buttons-list')!;
-      const btnPlayPreview = document.getElementById('btn-play-preview')!;
-      const btnStopPreview = document.getElementById('btn-stop-preview')!;
+      const btnPlayPreview = document.getElementById('btn-play-preview') as HTMLButtonElement;
+      const btnPausePreview = document.getElementById('btn-pause-preview') as HTMLButtonElement;
+      const btnStopPreview = document.getElementById('btn-stop-preview') as HTMLButtonElement;
+      const textPause = document.getElementById('text-pause')!;
+      const iconPause = document.getElementById('icon-pause')!;
       const eventsList = document.getElementById('events-list')!;
       const eventsCountBadge = document.getElementById('events-count-badge')!;
 
@@ -633,6 +640,7 @@ const version = pkg.version;
       // Preview Buttons Event Listeners
       btnPlayPreview.addEventListener('click', playPreview);
       btnStopPreview.addEventListener('click', stopPreview);
+      btnPausePreview.addEventListener('click', togglePausePreview);
 
       // File Processing
       function processFile(file: File) {
@@ -1447,6 +1455,11 @@ const version = pkg.version;
           playAnimationId = null;
         }
 
+        // Resume context in case it was suspended, so future plays work normally
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
         // Stop all oscillators
         activeOscillators.forEach((osc) => {
           try {
@@ -1464,18 +1477,41 @@ const version = pkg.version;
         activeSampleSources = [];
 
         // Reset buttons
-        btnPlayPreview.classList.remove('hidden');
-        btnStopPreview.classList.add('hidden');
+        btnPausePreview.disabled = true;
+        btnStopPreview.disabled = true;
+        textPause.textContent = 'Pause';
+        iconPause.innerHTML = '<path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z" />';
 
-        // Redraw final state without playhead
+        // Redraw final state without playhead (reset to 0)
         const filteredNotes = selectedChannelRackIndex === -1
           ? currentNotes
           : currentNotes.filter((n) => n.rack === selectedChannelRackIndex);
-        drawPianoRoll(filteredNotes, currentPPQ);
+        
+        // Use timeout to ensure canvas is drawn cleanly
+        setTimeout(() => {
+          drawPianoRoll(filteredNotes, currentPPQ);
+        }, 0);
+      }
+
+      function togglePausePreview() {
+        if (!audioCtx) return;
+        
+        if (audioCtx.state === 'running') {
+          audioCtx.suspend().then(() => {
+            textPause.textContent = 'Resume';
+            iconPause.innerHTML = '<path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.324-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />';
+          });
+        } else if (audioCtx.state === 'suspended') {
+          audioCtx.resume().then(() => {
+            textPause.textContent = 'Pause';
+            iconPause.innerHTML = '<path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z" />';
+          });
+        }
       }
 
       function playPreview() {
-        stopPreview(); // Stop any active preview first
+        // Stop current to start from the beginning
+        stopPreview(); 
 
         const filteredNotes = selectedChannelRackIndex === -1
           ? currentNotes
@@ -1488,14 +1524,16 @@ const version = pkg.version;
           audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
         }
 
-        // Resume if suspended (browser security autoplays)
+        // Resume if suspended
         if (audioCtx.state === 'suspended') {
           audioCtx.resume();
         }
 
         isPlaying = true;
-        btnPlayPreview.classList.add('hidden');
-        btnStopPreview.classList.remove('hidden');
+        btnPausePreview.disabled = false;
+        btnStopPreview.disabled = false;
+        textPause.textContent = 'Pause';
+        iconPause.innerHTML = '<path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z" />';
 
         const bpmInput = document.getElementById('input-preview-bpm') as HTMLInputElement | null;
         const tempo = bpmInput ? parseFloat(bpmInput.value) || 130 : 130;
