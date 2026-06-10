@@ -796,7 +796,9 @@ const version = pkg.version;
                   <ul class="space-y-0.5 mt-1 text-[10px] sm:text-xs">
                     ${ch.metadata.map((m: any) => {
                       let displayValue = typeof m.value === 'object' ? JSON.stringify(m.value) : m.value;
-                      return `<li class="flex flex-col sm:flex-row sm:justify-between border-b border-neutral-100 last:border-0 pb-0.5"><span class="font-medium text-neutral-600 truncate mr-2" title="${m.name}">${m.name}</span> <span class="text-neutral-500 font-mono truncate max-w-[200px] text-right" title="${displayValue}">${displayValue}</span></li>`;
+                      const safeKey = String(m.name).replace(/"/g, '&quot;');
+                      const safeValue = String(displayValue).replace(/"/g, '&quot;');
+                      return `<li class="metadata-row group/row cursor-pointer hover:bg-neutral-50 flex flex-col sm:flex-row sm:justify-between border-b border-neutral-100 last:border-0 pb-0.5 px-1 rounded transition-colors" data-key="${safeKey}" data-value="${safeValue}" title="Click to copy as JSON"><span class="font-medium text-neutral-600 truncate mr-2 group-hover/row:text-neutral-900 transition-colors">${m.name}</span> <span class="text-neutral-500 font-mono truncate max-w-[200px] text-right group-hover/row:text-neutral-800 transition-colors">${displayValue}</span></li>`;
                     }).join('')}
                   </ul>
                 </div>
@@ -847,9 +849,31 @@ const version = pkg.version;
             channelsList.appendChild(row);
           });
           
-          // Delegate click events for play buttons
+          // Delegate click events for play buttons and metadata copy
           channelsList.addEventListener('click', (e) => {
             const target = e.target as HTMLElement;
+            
+            // Handle Metadata JSON Copy
+            const metadataRow = target.closest('.metadata-row');
+            if (metadataRow) {
+              const key = metadataRow.getAttribute('data-key');
+              const value = metadataRow.getAttribute('data-value');
+              if (key !== null && value !== null) {
+                let parsedValue: any = value;
+                try { parsedValue = JSON.parse(value); } catch (e) { /* keep string */ }
+                
+                const jsonStr = JSON.stringify({ [key]: parsedValue }, null, 2);
+                navigator.clipboard.writeText(jsonStr).then(() => {
+                  const originalHtml = metadataRow.innerHTML;
+                  metadataRow.innerHTML = `<div class="flex items-center justify-center w-full text-emerald-600 font-semibold text-xs py-0.5"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 mr-1"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>Copied JSON</div>`;
+                  setTimeout(() => {
+                    metadataRow.innerHTML = originalHtml;
+                  }, 1200);
+                }).catch(err => console.error('Failed to copy', err));
+              }
+              return;
+            }
+
             const btn = target.closest('.btn-play-channel') as HTMLButtonElement | null;
             if (btn) {
               const idx = parseInt(btn.getAttribute('data-channel-idx') || '-1');
