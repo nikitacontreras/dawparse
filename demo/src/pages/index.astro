@@ -910,12 +910,14 @@ const version = pkg.version;
                         sampleBuffers[ch.index] = decodedData;
                       },
                       (e) => {
-                        console.warn('Failed to decode audio for channel', ch.index, e);
+                        console.warn(`[Audio Engine] Failed to decode audio for channel ${ch.index + 1} (${ch.samplePath}):`, e);
                       }
                     );
                   } catch (e) {
-                    console.warn('Sync error decoding audio for channel', ch.index, e);
+                    console.warn(`[Audio Engine] Sync error decoding audio for channel ${ch.index + 1} (${ch.samplePath}):`, e);
                   }
+                } else {
+                  console.warn(`[Audio Engine] Sample file not found in ZIP for channel ${ch.index + 1}: ${ch.samplePath}`);
                 }
               }
             });
