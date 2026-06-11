@@ -19,6 +19,10 @@ import {
   ChannelTracking,
   ChannelLevelAdjusts,
   ChannelAutomation,
+  PluginState,
+  PluginStateString,
+  PluginStateVstChunk,
+  PluginStateSection,
   CutGroupEvent,
 } from './types.js';
 import {
@@ -444,7 +448,168 @@ function parseStructuredData(id: number, payload: Uint8Array): FLPEvent['value']
         instTrackEditMode: flat.instTrackEditMode,
       } as TrackData;
     }
+    case 213: {
+      return parsePluginState(payload);
+    }
     default:
       return payload;
   }
+}
+
+function readInt32LE(data: Uint8Array, offset: number): number {
+  return (data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24)) >> 0;
+}
+
+function extractNullTerminatedStrings(data: Uint8Array, maxOffset: number): PluginStateString[] {
+  const result: PluginStateString[] = [];
+  let i = 0;
+  while (i < Math.min(maxOffset, data.length)) {
+    if (data[i] >= 32 && data[i] <= 126) {
+      const start = i;
+      while (i < data.length && data[i] >= 32 && data[i] <= 126) {
+        i++;
+      }
+      const len = i - start;
+      if (len >= 4) {
+        const str = new TextDecoder().decode(data.slice(start, i));
+        result.push({ offset: start, value: str });
+      }
+    } else {
+      i++;
+    }
+  }
+  return result;
+}
+
+function findVstMarkers(data: Uint8Array): { name: string; offset: number }[] {
+  const markers: { name: string; offset: number }[] = [];
+  for (const name of ['VstW', 'CcnK', 'FBCh', 'Smpl']) {
+    const encoded = new TextEncoder().encode(name);
+    for (let i = 0; i <= data.length - encoded.length; i++) {
+      let match = true;
+      for (let j = 0; j < encoded.length; j++) {
+        if (data[i + j] !== encoded[j]) { match = false; break; }
+      }
+      if (match) {
+        markers.push({ name, offset: i });
+      }
+    }
+  }
+  return markers;
+}
+
+function extractEmbeddedJson(data: Uint8Array): { json: Record<string, unknown> | null; offset: number; size: number } {
+  const pj = new TextEncoder().encode('#P');
+  for (let i = 0; i <= data.length - pj.length; i++) {
+    let match = true;
+    for (let j = 0; j < pj.length; j++) {
+      if (data[i + j] !== pj[j]) { match = false; break; }
+    }
+    if (!match) continue;
+    const braceStart = i + 2; // skip #P
+    if (braceStart >= data.length || data[braceStart] !== 0x7b) continue; // {
+    
+    let depth = 0;
+    let inStr = false;
+    let escaped = false;
+    let end = -1;
+    for (let k = braceStart; k < data.length; k++) {
+      const b = data[k];
+      if (escaped) { escaped = false; continue; }
+      if (b === 0x5c) { escaped = true; continue; } // backslash
+      if (b === 0x22) { inStr = !inStr; continue; } // double quote
+      if (inStr) continue;
+      if (b === 0x7b) depth++; // {
+      if (b === 0x7d) { depth--; if (depth === 0) { end = k + 1; break; } } // }
+    }
+    
+    if (end > 0) {
+      const jsonBytes = data.slice(braceStart, end);
+      const jsonStr = new TextDecoder().decode(jsonBytes);
+      try {
+        return { json: JSON.parse(jsonStr) as Record<string, unknown>, offset: i, size: end - i };
+      } catch {
+        return { json: null, offset: i, size: end - i };
+      }
+    }
+  }
+  return { json: null, offset: -1, size: 0 };
+}
+
+function parsePluginState(payload: Uint8Array): PluginState {
+  const header: number[] = [];
+  for (let i = 0; i < Math.min(360, payload.length); i += 4) {
+    header.push(readInt32LE(payload, i));
+  }
+
+  const strEnd = payload.length;
+  const allStrings = extractNullTerminatedStrings(payload, strEnd);
+  const strings = allStrings.filter((s) => s.value.length >= 4);
+
+  const vstMarkers = findVstMarkers(payload);
+  const { json, offset: jsonOffset, size: jsonSize } = extractEmbeddedJson(payload);
+
+  const vstChunk: PluginStateVstChunk = {
+    markers: vstMarkers,
+    embeddedJson: json,
+    jsonOffset,
+    jsonSize,
+  };
+
+  const sections: PluginStateSection[] = [];
+
+  // Divide into sections based on known boundaries
+  // String table starts with STSV marker
+  const stsvOffset = payload.findIndex((_, i) =>
+    i + 3 < payload.length &&
+    payload[i] === 0x53 && payload[i + 1] === 0x54 &&
+    payload[i + 2] === 0x53 && payload[i + 3] === 0x56
+  );
+
+  if (stsvOffset > 0) {
+    sections.push({ label: 'FLP Header', offset: 0, size: stsvOffset, data: payload.slice(0, stsvOffset) });
+  }
+
+  // VstW marks the VST chunk
+  const vstwMarker = vstMarkers.find((m) => m.name === 'VstW');
+  if (vstwMarker) {
+    const vstStart = vstwMarker.offset;
+    if (stsvOffset > 0) {
+      sections.push({ label: 'String Table', offset: stsvOffset, size: vstStart - stsvOffset, data: payload.slice(stsvOffset, vstStart) });
+    } else if (stsvOffset < 0) {
+      sections.push({ label: 'FLP Header', offset: 0, size: vstStart, data: payload.slice(0, vstStart) });
+    }
+
+    // JSON within VST chunk
+    if (jsonOffset >= vstStart) {
+      sections.push({ label: 'VST Chunk', offset: vstStart, size: jsonOffset - vstStart, data: payload.slice(vstStart, jsonOffset) });
+      sections.push({ label: 'Embedded JSON (Serato Project)', offset: jsonOffset, size: jsonSize, data: payload.slice(jsonOffset, jsonOffset + jsonSize) });
+      const afterJson = jsonOffset + jsonSize;
+      sections.push({ label: 'VST Chunk (cont.)', offset: afterJson, size: vstStart + 9200 - afterJson, data: payload.slice(afterJson, vstStart + 9200) });
+    } else {
+      sections.push({ label: 'VST Chunk', offset: vstStart, size: 9200, data: payload.slice(vstStart, vstStart + 9200) });
+    }
+  } else {
+    if (stsvOffset > 0) {
+      sections.push({ label: 'String Table', offset: stsvOffset, size: payload.length - stsvOffset, data: payload.slice(stsvOffset) });
+    }
+  }
+
+  // JUCE section
+  const juceOffset = payload.findIndex((_, i) =>
+    i + 3 < payload.length &&
+    payload[i] === 0x4a && payload[i + 1] === 0x55 &&
+    payload[i + 2] === 0x43 && payload[i + 3] === 0x45
+  );
+  if (juceOffset > 0) {
+    sections.push({ label: 'JUCE Private Data', offset: juceOffset, size: payload.length - juceOffset, data: payload.slice(juceOffset) });
+  }
+
+  return {
+    header,
+    strings,
+    vstChunk,
+    sections,
+    rawPayload: payload,
+  };
 }

@@ -801,11 +801,29 @@ const version = pkg.version;
                       let displayValue = '';
                       let isObject = false;
                       if (typeof m.value === 'object' && m.value !== null) {
-                        // Check if it's a huge binary buffer returned as an object/array
-                        if (m.value instanceof Uint8Array || m.value.buffer || Object.keys(m.value).length > 30) {
+                        // PluginState structured object
+                        if (m.value.rawPayload && Array.isArray(m.value.header)) {
+                          const ps = m.value;
+                          const pluginName = ps.strings?.find((s: any) => s.value?.includes('Serato'))?.value || 
+                            ps.strings?.[0]?.value || 'Unknown Plugin';
+                          const vstInfo = ps.vstChunk?.markers?.map((mk: any) => mk.name).join(' → ') || '';
+                          const jsonSize = ps.vstChunk?.jsonSize || 0;
+                          const sections = ps.sections?.map((s: any) => `${s.label}: ${s.size}B`).join(', ') || '';
+                          const summary = {
+                            plugin: pluginName,
+                            vstMarkers: vstInfo,
+                            embeddedJsonSize: jsonSize,
+                            hasEmbeddedJson: ps.vstChunk?.embeddedJson !== null,
+                            sections: sections,
+                            totalSize: ps.rawPayload.length,
+                            embeddedProject: ps.vstChunk?.embeddedJson || undefined
+                          };
+                          isObject = true;
+                          displayValue = JSON.stringify(summary, null, 2);
+                        } else if (m.value instanceof Uint8Array || m.value.buffer || Object.keys(m.value).length > 30) {
                           const len = m.value instanceof Uint8Array ? m.value.length : Object.keys(m.value).length;
                           displayValue = `[Binary Data Blob: ${len} bytes]`;
-                          isObject = false; // keep inline
+                          isObject = false;
                         } else {
                           isObject = true;
                           displayValue = JSON.stringify(m.value, null, 2);

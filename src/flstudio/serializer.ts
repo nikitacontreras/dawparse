@@ -8,6 +8,7 @@ import {
   TrackData,
   ChannelParameters,
   ChannelAutomation,
+  PluginState,
   CutGroupEvent,
 } from './types.js';
 import {
@@ -100,6 +101,14 @@ function serializeStructuredData(id: number, value: FLPEvent['value']): Uint8Arr
 
   if (value instanceof Uint8Array) {
     return value;
+  }
+
+  // PluginState: roundtrip via rawPayload
+  if (id === 213) {
+    const ps = value as PluginState;
+    if (ps.rawPayload && ps.rawPayload instanceof Uint8Array) {
+      return ps.rawPayload;
+    }
   }
 
   const writer = new BufferWriter();

@@ -229,6 +229,33 @@ export interface ChannelAutomation {
   lfoOffset: number;
 }
 
+export interface PluginStateString {
+  offset: number;
+  value: string;
+}
+
+export interface PluginStateVstChunk {
+  markers: { name: string; offset: number }[];
+  embeddedJson: Record<string, unknown> | null;
+  jsonOffset: number;
+  jsonSize: number;
+}
+
+export interface PluginStateSection {
+  label: string;
+  offset: number;
+  size: number;
+  data: Uint8Array;
+}
+
+export interface PluginState {
+  header: number[];
+  strings: PluginStateString[];
+  vstChunk: PluginStateVstChunk;
+  sections: PluginStateSection[];
+  rawPayload: Uint8Array;
+}
+
 export interface CutGroupEvent {
   cutGroup: number;
   cutBy: number;
@@ -255,7 +282,8 @@ export interface FLPEvent {
     | ChannelTracking
     | ChannelLevelAdjusts
     | ChannelAutomation
-    | TrackData;
+    | TrackData
+    | PluginState;
 }
 
 export interface FLPProject {
