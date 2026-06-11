@@ -1,8 +1,16 @@
-import * as fs from 'fs';
 import { FLPProject } from './types.js';
 import { parseFLP } from './parser.js';
 import { serializeFLP } from './serializer.js';
 import { parseFLPZip } from './zip.js';
+
+function lazyFS(): typeof import('fs') | undefined {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('fs');
+  } catch {
+    return undefined;
+  }
+}
 
 export interface FLPOptions {
   file?: string | Uint8Array | ArrayBuffer;
@@ -34,7 +42,8 @@ export class FLP {
 
   private toUint8Array(input: string | Uint8Array | ArrayBuffer): Uint8Array {
     if (typeof input === 'string') {
-      if (typeof fs !== 'undefined' && fs.readFileSync) {
+      const fs = lazyFS();
+      if (fs?.readFileSync) {
         try {
           const buf = fs.readFileSync(input);
           return new Uint8Array(buf);

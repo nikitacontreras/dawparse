@@ -4,8 +4,9 @@ node_modules/
 # Production Build Artifacts
 dist/
 
-# Heavy local assets (FL Studio zipped project)
+# Heavy local assets
 untitled.zip
+*.flp
 
 # Specific tests excluded as requested
 test/zip.test.ts
