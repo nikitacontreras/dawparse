@@ -4,37 +4,39 @@ import { BufferWriter } from '../shared/writer.js';
 export interface FieldDescriptor {
   name: string;
   type: 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'float64';
+  optional?: boolean;
+  default?: number;
 }
+
+const FIELD_SIZES: Record<FieldDescriptor['type'], number> = {
+  int8: 1, uint8: 1,
+  int16: 2, uint16: 2,
+  int32: 4, uint32: 4,
+  float32: 4, float64: 8,
+};
+
+type ReaderMethod = (reader: BufferReader) => number;
+
+const FIELD_READERS: Record<FieldDescriptor['type'], ReaderMethod> = {
+  int8: (r) => r.readInt8(),
+  uint8: (r) => r.readUint8(),
+  int16: (r) => r.readInt16(),
+  uint16: (r) => r.readUint16(),
+  int32: (r) => r.readInt32(),
+  uint32: (r) => r.readUint32(),
+  float32: (r) => r.readFloat32(),
+  float64: (r) => r.readFloat64(),
+};
 
 export function readStruct<T>(reader: BufferReader, fields: FieldDescriptor[]): T {
   const result = {} as Record<string, unknown>;
   for (const field of fields) {
-    switch (field.type) {
-      case 'int8':
-        result[field.name] = reader.readInt8();
-        break;
-      case 'uint8':
-        result[field.name] = reader.readUint8();
-        break;
-      case 'int16':
-        result[field.name] = reader.readInt16();
-        break;
-      case 'uint16':
-        result[field.name] = reader.readUint16();
-        break;
-      case 'int32':
-        result[field.name] = reader.readInt32();
-        break;
-      case 'uint32':
-        result[field.name] = reader.readUint32();
-        break;
-      case 'float32':
-        result[field.name] = reader.readFloat32();
-        break;
-      case 'float64':
-        result[field.name] = reader.readFloat64();
-        break;
+    const size = FIELD_SIZES[field.type];
+    if (field.optional && reader.remaining < size) {
+      result[field.name] = field.default ?? 0;
+      continue;
     }
+    result[field.name] = FIELD_READERS[field.type](reader);
   }
   return result as unknown as T;
 }
@@ -75,18 +77,18 @@ export function writeStruct(writer: BufferWriter, fields: FieldDescriptor[], val
   }
 }
 
-// Fixed-size expected payload lengths
-export const EXPECTED_LENGTHS: Record<number, number> = {
-  209: 20, // Channel Delay
-  212: 52, // Plugin Wrapper
-  215: 168, // Channel Parameters
-  218: 68, // Channel Envelope LFO
-  219: 24, // Channel Levels
-  221: 9, // Channel Polyphony
-  227: 18, // Remote Controller
-  228: 16, // Channel Tracking
-  229: 20, // Channel Level Adjusts
-  238: 66, // Track Data
+// Known valid payload sizes per event ID (some events vary by FL version)
+export const KNOWN_SIZES: Record<number, number[]> = {
+  209: [20],   // Channel Delay
+  212: [52],   // Plugin Wrapper
+  215: [157, 168], // Channel Parameters (157 = FL ≤20.8.4, 168 = FL ≥20.9.1)
+  218: [68],   // Channel Envelope LFO
+  219: [24],   // Channel Levels
+  221: [9],    // Channel Polyphony
+  227: [18],   // Remote Controller
+  228: [16],   // Channel Tracking
+  229: [20],   // Channel Level Adjusts
+  238: [66],   // Track Data
 };
 
 export const ChannelDelayFields: FieldDescriptor[] = [
@@ -113,7 +115,7 @@ export const PluginWrapperFields: FieldDescriptor[] = [
   { name: 'height', type: 'uint32' },
 ];
 
-export const ChannelParametersFields: FieldDescriptor[] = [
+export const ChannelParametersCoreFields: FieldDescriptor[] = [
   { name: 'simSynthTempo', type: 'int32' },
   { name: 'spectrumView', type: 'uint8' },
   { name: 'multiChannelWaveformView', type: 'uint8' },
@@ -154,16 +156,19 @@ export const ChannelParametersFields: FieldDescriptor[] = [
   { name: 'stretchPitch', type: 'int32' },
   { name: 'stretchMultiplier', type: 'int32' },
   { name: 'stretchMode', type: 'int32' },
-  // note: u5 is an array handled explicitly
+  // u5 is a 4×int32 array handled explicitly in the parser
   { name: 'fxStart', type: 'float64' },
   { name: 'fxEnd', type: 'float64' },
   { name: 'u6', type: 'int32' },
   { name: 'playbackStart', type: 'float32' },
   { name: 'u7', type: 'int32' },
   { name: 'reverseRegions', type: 'uint8' },
-  { name: 'fixTrim', type: 'uint8' },
-  { name: 'u8', type: 'int16' },
-  { name: 'formantShift', type: 'float64' },
+];
+
+export const ChannelParametersTailFields: FieldDescriptor[] = [
+  { name: 'fixTrim', type: 'uint8', optional: true, default: 0 },
+  { name: 'u8', type: 'int16', optional: true, default: 0 },
+  { name: 'formantShift', type: 'float64', optional: true, default: 0 },
 ];
 
 export const ChannelEnvelopeLFOFields: FieldDescriptor[] = [

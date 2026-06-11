@@ -26,10 +26,12 @@ import {
   CutGroupEvent,
 } from './types.js';
 import {
-  EXPECTED_LENGTHS,
+  KNOWN_SIZES,
   readStruct,
   ChannelDelayFields,
   PluginWrapperFields,
+  ChannelParametersCoreFields,
+  ChannelParametersTailFields,
   ChannelEnvelopeLFOFields,
   ChannelLevelsFields,
   ChannelPolyphonyFields,
@@ -154,11 +156,11 @@ function parseStructuredData(id: number, payload: Uint8Array): FLPEvent['value']
     return str;
   }
 
-  // Enforce validation for expected payload lengths
-  const expectedLen = EXPECTED_LENGTHS[id];
-  if (expectedLen !== undefined && payload.length < expectedLen) {
-    throw new Error(
-      `FLP structured event ID ${id} too short: expected at least ${expectedLen} bytes, got ${payload.length} bytes`,
+  // Validate payload size against known sizes; unknown sizes or mismatches get a warning
+  const known = KNOWN_SIZES[id];
+  if (known && !known.includes(payload.length)) {
+    console.warn(
+      `FLP event ID ${id} (${getEventName(id)}): unexpected payload size ${payload.length}B (expected ${known.join(' or ')}B) — attempting partial parse`,
     );
   }
 
@@ -174,115 +176,13 @@ function parseStructuredData(id: number, payload: Uint8Array): FLPEvent['value']
       return readStruct<PluginWrapper>(reader, PluginWrapperFields);
     }
     case 215: {
-      // Channel Parameters
-      const simSynthTempo = reader.readInt32();
-      const spectrumView = reader.readUint8();
-      const multiChannelWaveformView = reader.readUint8();
-      const u1 = reader.readInt16();
-      const useRiff = reader.readUint8();
-      const removeDc = reader.readUint8();
-      const delayFlags = reader.readUint8();
-      const keyboardPitch = reader.readUint8();
-      const simSynthKeyboardPitch = reader.readInt32();
-      const drumSynthKeyboardPitch = reader.readInt32();
-      const tone = reader.readFloat32();
-      const overtone = reader.readFloat32();
-      const noise = reader.readFloat32();
-      const noiseBand = reader.readFloat32();
-      const timeStretch = reader.readFloat32();
-      const arpDirection = reader.readInt32();
-      const arpRange = reader.readInt32();
-      const arpChord = reader.readInt32();
-      const arpTime = reader.readInt32();
-      const arpGate = reader.readInt32();
-      const arpSlide = reader.readUint8();
-      const u2 = reader.readUint8();
-      const fullPorta = reader.readUint8();
-      const addRoot = reader.readUint8();
-      const timeGate = reader.readInt16();
-      const u3 = reader.readInt16();
-      const keyRegionMin = reader.readInt32();
-      const keyRegionMax = reader.readInt32();
-      const layerCrossfade = reader.readInt32();
-      const normalize = reader.readUint8();
-      const inverted = reader.readUint8();
-      const u4 = reader.readUint8();
-      const declickMode = reader.readUint8();
-      const crossfade = reader.readInt32();
-      const trim = reader.readInt32();
-      const arpRepeat = reader.readInt32();
-      const stretchTime = reader.readInt32();
-      const stretchPitch = reader.readInt32();
-      const stretchMultiplier = reader.readInt32();
-      const stretchMode = reader.readInt32();
-
+      const core = readStruct<Record<string, unknown>>(reader, ChannelParametersCoreFields);
       const u5: number[] = [];
       for (let i = 0; i < 4; i++) {
         u5.push(reader.readInt32());
       }
-
-      const fxStart = reader.readFloat64();
-      const fxEnd = reader.readFloat64();
-      const u6 = reader.readInt32();
-      const playbackStart = reader.readFloat32();
-      const u7 = reader.readInt32();
-      const reverseRegions = reader.readUint8();
-      const fixTrim = reader.readUint8();
-      const u8 = reader.readInt16();
-      const formantShift = reader.readFloat64();
-
-      return {
-        simSynthTempo,
-        spectrumView,
-        multiChannelWaveformView,
-        u1,
-        useRiff,
-        removeDc,
-        delayFlags,
-        keyboardPitch,
-        simSynthKeyboardPitch,
-        drumSynthKeyboardPitch,
-        tone,
-        overtone,
-        noise,
-        noiseBand,
-        timeStretch,
-        arpDirection,
-        arpRange,
-        arpChord,
-        arpTime,
-        arpGate,
-        arpSlide,
-        u2,
-        fullPorta,
-        addRoot,
-        timeGate,
-        u3,
-        keyRegionMin,
-        keyRegionMax,
-        layerCrossfade,
-        normalize,
-        inverted,
-        u4,
-        declickMode,
-        crossfade,
-        trim,
-        arpRepeat,
-        stretchTime,
-        stretchPitch,
-        stretchMultiplier,
-        stretchMode,
-        u5,
-        fxStart,
-        fxEnd,
-        u6,
-        playbackStart,
-        u7,
-        reverseRegions,
-        fixTrim,
-        u8,
-        formantShift,
-      } as ChannelParameters;
+      const tail = readStruct<Record<string, unknown>>(reader, ChannelParametersTailFields);
+      return { ...core, u5, ...tail } as unknown as ChannelParameters;
     }
     case 218: {
       // Channel Envelope LFO
