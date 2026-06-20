@@ -10,6 +10,8 @@ import { initAdsrSliders, playPreview, stopPreview, togglePausePreview } from '.
 
 import { btnPlayPreview, btnStopPreview, btnPausePreview } from './state.js';
 
+import ParserWorker from './parserWorker.js?worker';
+
 function processFile(file) {
   showLoading();
 
@@ -18,8 +20,26 @@ function processFile(file) {
     try {
       const buffer = new Uint8Array(event.target.result);
       const isZip = file.name.toLowerCase().endsWith('.zip');
-      const flp = isZip ? new FLP({ zip: buffer }) : new FLP({ file: buffer });
-      renderDashboard(flp, file.name, isZip);
+      
+      const worker = new ParserWorker();
+      
+      worker.onmessage = (e) => {
+        const { success, flp, error } = e.data;
+        if (success) {
+          renderDashboard(flp, file.name, isZip);
+        } else {
+          showError(error);
+        }
+        worker.terminate();
+      };
+      
+      worker.onerror = (err) => {
+        showError('Worker encountered an error: ' + (err.message || 'Unknown error'));
+        worker.terminate();
+      };
+
+      worker.postMessage({ buffer, isZip, fileName: file.name });
+      
     } catch (err) {
       showError(err.message || String(err));
     }
