@@ -150,10 +150,18 @@ export function renderDashboard(flp, originalFileName, isZip) {
                     };
                     isObject = true;
                     displayValue = JSON.stringify(summary, null, 2);
-                  } else if (m.value instanceof Uint8Array || m.value.buffer || Object.keys(m.value).length > 30) {
+                  } else if (m.value instanceof Uint8Array && m.value.length <= 5000) {
+                    displayValue = JSON.stringify(Array.from(m.value));
+                    isObject = true;
+                  } else if (m.value instanceof Uint8Array || m.value.buffer || Object.keys(m.value).length > 5000) {
                     const len = m.value instanceof Uint8Array ? m.value.length : Object.keys(m.value).length;
-                    displayValue = `[Binary Data Blob: ${len} bytes]`;
+                    
+                    const blobId = `blob_${Math.random().toString(36).substring(2, 9)}`;
+                    state.binaryBlobs[blobId] = m.value instanceof Uint8Array ? m.value : new Uint8Array(m.value.buffer || Object.values(m.value));
+                    
+                    displayValue = `[Binary Data Blob: ${len} bytes (Click to Download .bin)]`;
                     isObject = false;
+                    return `<li class="metadata-row group/row cursor-pointer hover:bg-neutral-50 flex flex-col sm:flex-row sm:justify-between border-b border-neutral-100 last:border-0 pb-0.5 px-1 rounded transition-colors" data-blob-id="${blobId}" data-name="${eventName.replace(/"/g, '')}" title="Click to download raw binary bytes (.bin)"><span class="font-medium text-neutral-600 truncate mr-2 group-hover/row:text-neutral-900 transition-colors" title="${eventName}">${eventName}</span> <span class="text-indigo-500 font-mono font-semibold truncate max-w-[250px] text-right group-hover/row:text-indigo-700 transition-colors" title="${displayValue}">${displayValue}</span></li>`;
                   } else {
                     isObject = true;
                     displayValue = JSON.stringify(m.value, null, 2);
@@ -229,6 +237,26 @@ export function renderDashboard(flp, originalFileName, isZip) {
 
       const metadataRow = target.closest('.metadata-row');
       if (metadataRow) {
+        const blobId = metadataRow.getAttribute('data-blob-id');
+        if (blobId !== null) {
+          const buffer = state.binaryBlobs[blobId];
+          const blobName = metadataRow.getAttribute('data-name') || 'binary_data';
+          const blob = new Blob([buffer], { type: 'application/octet-stream' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${blobName}.bin`;
+          a.click();
+          URL.revokeObjectURL(url);
+          
+          const originalHtml = metadataRow.innerHTML;
+          metadataRow.innerHTML = `<div class="flex items-center justify-center w-full text-indigo-600 font-semibold text-xs py-0.5"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 mr-1"><path stroke-linecap="round" stroke-linejoin="round" d="m3 16.5 5.25 5.25m0 0 5.25-5.25m-5.25 5.25V3" /></svg>Downloaded .bin File</div>`;
+          setTimeout(() => {
+            metadataRow.innerHTML = originalHtml;
+          }, 1500);
+          return;
+        }
+
         const key = metadataRow.getAttribute('data-key');
         const value = metadataRow.getAttribute('data-value');
         if (key !== null && value !== null) {
@@ -412,9 +440,22 @@ export function renderDashboard(flp, originalFileName, isZip) {
     if (typeof evt.value === 'string') {
       valStr = `"${evt.value}"`;
     } else if (evt.value && typeof evt.value === 'object' && !(evt.value instanceof Uint8Array)) {
-      valStr = JSON.stringify(evt.value);
+      try {
+        valStr = JSON.stringify(evt.value, (key, val) => {
+          if (val instanceof Uint8Array || (val && val.buffer instanceof ArrayBuffer)) {
+            return `[Binary Data: ${val.byteLength || val.length} bytes]`;
+          }
+          return val;
+        });
+      } catch (err) {
+        valStr = '[Object too complex to display]';
+      }
     } else if (evt.value instanceof Uint8Array) {
-      valStr = `[Binary: ${evt.value.length} bytes]`;
+      if (evt.value.length <= 5000) {
+        valStr = JSON.stringify(Array.from(evt.value));
+      } else {
+        valStr = `[Binary: ${evt.value.length} bytes (too large to copy)]`;
+      }
     } else {
       valStr = String(evt.value);
     }

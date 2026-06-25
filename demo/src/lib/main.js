@@ -3,7 +3,7 @@ import { FLP } from 'dawparse';
 import {
   dropzone, fileInput
 } from './state.js';
-import { showLoading, showError } from './dom.js';
+import { showLoading, showError, updateLoadingText } from './dom.js';
 import { renderDashboard } from './dashboard.js';
 import { initTabs } from './tabs.js';
 import { initAdsrSliders, playPreview, stopPreview, togglePausePreview } from './audio.js';
@@ -24,9 +24,17 @@ function processFile(file) {
       const worker = new ParserWorker();
       
       worker.onmessage = (e) => {
+        if (e.data.type === 'progress') {
+          updateLoadingText(e.data.message);
+          return;
+        }
+
         const { success, flp, error } = e.data;
         if (success) {
-          renderDashboard(flp, file.name, isZip);
+          // Defer rendering by 50ms so the browser can paint the final progress message
+          setTimeout(() => {
+            renderDashboard(flp, file.name, isZip);
+          }, 50);
         } else {
           showError(error);
         }
@@ -38,7 +46,7 @@ function processFile(file) {
         worker.terminate();
       };
 
-      worker.postMessage({ buffer, isZip, fileName: file.name });
+      worker.postMessage({ buffer, isZip, fileName: file.name }, [buffer.buffer]);
       
     } catch (err) {
       showError(err.message || String(err));

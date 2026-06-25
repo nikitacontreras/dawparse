@@ -46,7 +46,9 @@ import {
   TrackDataFields,
 } from './schemas.js';
 
-export function parseFLP(data: Uint8Array): FLPProject {
+export type ProgressCallback = (eventIndex: number, eventName: string, progressPct: number) => void;
+
+export function parseFLP(data: Uint8Array, onProgress?: ProgressCallback): FLPProject {
   const reader = new BufferReader(data);
 
   if (reader.length < 22) {
@@ -82,8 +84,12 @@ export function parseFLP(data: Uint8Array): FLPProject {
 
   const events: FLPEvent[] = [];
   const endOffset = Math.min(reader.length, reader.offset + eventSize);
+  const startOffset = reader.offset;
+  const totalProcessableBytes = endOffset - startOffset;
 
+  let eventIndex = 0;
   while (reader.offset < endOffset) {
+    eventIndex++;
     const id = reader.readUint8();
     const name = getEventName(id);
     const type = getEventType(id);
@@ -125,6 +131,16 @@ export function parseFLP(data: Uint8Array): FLPProject {
       type,
       value,
     });
+
+    if (onProgress) {
+      const progress = Math.min(100, Math.round(((reader.offset - startOffset) / totalProcessableBytes) * 100));
+      onProgress(eventIndex, name, progress);
+    }
+  }
+
+  // Final progress update
+  if (onProgress) {
+    onProgress(eventIndex, 'Done', 100);
   }
 
   return { header, events };
@@ -408,7 +424,7 @@ function extractEmbeddedJson(data: Uint8Array): { json: Record<string, unknown> 
     if (!match) continue;
     const braceStart = i + 2; // skip #P
     if (braceStart >= data.length || data[braceStart] !== 0x7b) continue; // {
-    
+
     let depth = 0;
     let inStr = false;
     let escaped = false;
@@ -422,7 +438,7 @@ function extractEmbeddedJson(data: Uint8Array): { json: Record<string, unknown> 
       if (b === 0x7b) depth++; // {
       if (b === 0x7d) { depth--; if (depth === 0) { end = k + 1; break; } } // }
     }
-    
+
     if (end > 0) {
       const jsonBytes = data.slice(braceStart, end);
       const jsonStr = new TextDecoder().decode(jsonBytes);

@@ -1,5 +1,5 @@
 import { unzipSync } from 'fflate';
-import { parseFLP } from './parser.js';
+import { parseFLP, ProgressCallback } from './parser.js';
 import { FLPProject } from './types.js';
 
 export interface FLPZipResult {
@@ -15,7 +15,7 @@ export interface FLPZipResult {
  * @param zipData The binary contents of the .zip file
  * @returns An object containing the parsed FLP project, the name of the FLP file, and a dictionary of all files inside the zip
  */
-export function parseFLPZip(zipData: Uint8Array): FLPZipResult {
+export function parseFLPZip(zipData: Uint8Array, onProgress?: ProgressCallback): FLPZipResult {
   let decompressed: Record<string, Uint8Array>;
   try {
     decompressed = unzipSync(zipData);
@@ -32,7 +32,7 @@ export function parseFLPZip(zipData: Uint8Array): FLPZipResult {
   }
 
   const [flpName, flpBytes] = flpFileEntry;
-  const project = parseFLP(flpBytes);
+  const project = parseFLP(flpBytes, onProgress);
 
   return {
     project,

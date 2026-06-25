@@ -16,6 +16,7 @@ export interface FLPOptions {
   file?: string | Uint8Array | ArrayBuffer;
   zip?: string | Uint8Array | ArrayBuffer;
   project?: FLPProject;
+  onProgress?: import('./parser.js').ProgressCallback;
 }
 
 export class FLP {
@@ -28,10 +29,10 @@ export class FLP {
       this.project = options.project;
     } else if (options.file !== undefined) {
       const data = this.toUint8Array(options.file);
-      this.project = parseFLP(data);
+      this.project = parseFLP(data, options.onProgress);
     } else if (options.zip !== undefined) {
       const data = this.toUint8Array(options.zip);
-      const zipResult = parseFLPZip(data);
+      const zipResult = parseFLPZip(data, options.onProgress);
       this.project = zipResult.project;
       this.files = zipResult.files;
       this.flpName = zipResult.flpName;

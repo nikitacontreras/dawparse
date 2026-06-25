@@ -88,7 +88,7 @@ export const KNOWN_SIZES: Record<number, number[]> = {
   227: [18],   // Remote Controller
   228: [16],   // Channel Tracking
   229: [20],   // Channel Level Adjusts
-  238: [66],   // Track Data
+  238: [66, 70],   // Track Data
 };
 
 export const ChannelDelayFields: FieldDescriptor[] = [

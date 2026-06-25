@@ -69,4 +69,5 @@ export const state = {
   isPlaying: false,
   playStartTime: 0,
   playAnimationId: null,
+  binaryBlobs: {},
 };

@@ -14,3 +14,10 @@ export function showError(msg) {
   errorMessage.textContent = msg;
   dashboard.classList.add('hidden');
 }
+
+export function updateLoadingText(text) {
+  const span = loadingSpinner.querySelector('span');
+  if (span) {
+    span.textContent = text;
+  }
+}
